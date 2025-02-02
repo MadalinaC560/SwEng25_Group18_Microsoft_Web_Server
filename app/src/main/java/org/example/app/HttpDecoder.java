@@ -1,7 +1,9 @@
 package org.example.app;
+import java.io.InputStream;
 import java.net.http.HttpRequest;
 import java.util.Optional;
 import java.util.List;
+
 
 public class HttpDecoder{
 
@@ -24,7 +26,7 @@ public class HttpDecoder{
         PATCH
     }
 
-    private static HttpRequest addRequestHeaders(final List<String> message, final Buildeer builder){
+    private static HttpRequest addRequestHeaders(final List<String> message, final org.example.app.HttpRequest.Builder builder){
         return null;
     }
 

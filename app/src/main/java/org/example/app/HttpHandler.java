@@ -18,7 +18,7 @@ public class HttpHandler {
         /*Bufferedwriter used to write HTTP response to output stream*/
         final BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(outputStream));
 
-        Optional<HttpRequest> request = HttpDecoder.decode(inputStream);
+        Optional<java.net.http.HttpRequest> request = HttpDecoder.decode(inputStream);
     }
 
     public void handleInvalidRequest(final BufferedWriter bufferedWriter){
