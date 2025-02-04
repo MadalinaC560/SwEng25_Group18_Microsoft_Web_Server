@@ -60,21 +60,21 @@ public class HttpHandler{
      //handles valid requests by calling correct requestrunner.
     private void handleRequest(final HttpRequest request, final BufferedWriter bw){
         try {
-            String path = request.uri().getPath();          //extract path from incoming httprequest
+            String path = request.uri().getPath();                                                                  //extract path from incoming httprequest
             RequestRunner runner = routes.get(path);
 
             if(runner != null){
-                runner.run(request);    //the corresponding request runner is run if the route exists
-                bw.write("HTTP/1.1 200 ok \r\n"); //sends successful http 200 ok response
+                runner.run(request);                                                                                //the corresponding request runner is run if the route exists
+                bw.write("HTTP/1.1 200 ok \r\n");                                                                   //sends successful http 200 ok response
             }
             else{
-                bw.write("HTTP/1.1 404 Not Found \r\n"); //sends 404 response code, indicating the route wasn't present
+                bw.write("HTTP/1.1 404 Not Found \r\n");                                                            //sends 404 response code, indicating the route wasn't present
             }
 
-            bw.flush();
+            bw.flush();                                                                                             //ensure all data sent
             
         } catch (Exception e) {
-            System.out.println(e);
+            System.out.println(e);                                                                                  //print any errors
         }
 
     }
