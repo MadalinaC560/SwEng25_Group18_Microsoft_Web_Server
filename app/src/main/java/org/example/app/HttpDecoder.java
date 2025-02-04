@@ -1,15 +1,15 @@
 package org.example.app;
 import java.io.InputStream;
 import java.net.http.HttpRequest;
-import java.util.Optional;
 import java.util.List;
+import java.util.Optional;
 
 
 public class HttpDecoder{
 
     public static Optional<HttpRequest> decode(final InputStream inputStream){
-        return null;   
-    }
+        return null;
+    }   
 
     private static Optional<List<String>> readMessage(final InputStream inputStream){
         return null;
@@ -26,9 +26,9 @@ public class HttpDecoder{
         PATCH
     }
 
-    private static HttpRequest addRequestHeaders(final List<String> message, final org.example.app.HttpRequest.Builder builder){
-        return null;
-    }
+    // private static HttpRequest addRequestHeaders(final List<String> message, final org.example.app.HttpRequest.Builder builder){
+    //     return null;
+    // }
 
     
 
