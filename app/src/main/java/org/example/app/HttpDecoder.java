@@ -15,7 +15,12 @@ import java.util.Optional;
 public class HttpDecoder{
 
     public static Optional<HttpRequest> decode(final InputStream inputStream){
-        return null;
+        Optional<List<String>> request = readMessage(inputStream);
+
+        Optional<HttpRequest> finalRequest = buildRequest(request);
+        
+        return finalRequest;
+
     }   
 
     
@@ -35,14 +40,15 @@ public class HttpDecoder{
 
         } 
         catch(IOException e){
-            return Optional.empty();                                                                            
+            return Optional.empty();                                                                                                                                
         }
     }
 
     //extracts the http method and URI from the string list
-    private static Optional<HttpRequest> buildRequest(List<String> message){
+    private static Optional<HttpRequest> buildRequest(Optional<List<String>> message){
         if(message != null && !message.isEmpty()){
-            String methodAndUri = message.get(0);                                                           //first line should contain the http method and uri
+            List<String> unwrappedMessage = message.get();
+            String methodAndUri = unwrappedMessage.get(0);                                                  //first line should contain the http method and uri
             
             String[] separated = methodAndUri.split(" ");                                                   //the message is split by spaces (i.e GET /index.html)
 
@@ -62,7 +68,7 @@ public class HttpDecoder{
         return Optional.empty();
     }
 
-    public static HttpRequest builder(String method, String uri){
+    private static HttpRequest builder(String method, String uri){
         HttpRequest.Builder requestBuilder = HttpRequest.newBuilder()   
         .uri(URI.create(uri));
 
