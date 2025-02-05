@@ -12,7 +12,7 @@ import java.util.Optional;
 // responsible for handling the lifecycle of HTTP requests and responses
 public class HttpHandler{
 
-    private final Map<String, RequestRunner> routes;                                                                 /* map contains all routes and assosciated requests.*/
+    private final Map<String, RequestRunner> routes;                                                                 // map contains all routes and assosciated requests
 
     public HttpHandler(final Map<String, RequestRunner> routes){
         this.routes = routes;

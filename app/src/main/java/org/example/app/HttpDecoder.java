@@ -47,7 +47,7 @@ public class HttpDecoder{
     //extracts the http method and URI from the string list
     private static Optional<HttpRequest> buildRequest(Optional<List<String>> message){
         if(message != null && !message.isEmpty()){
-            List<String> unwrappedMessage = message.get();
+            List<String> unwrappedMessage = message.get();                                                  //unwrapping the optional is quite expensive, will look for cheaper methods  
             String methodAndUri = unwrappedMessage.get(0);                                                  //first line should contain the http method and uri
             
             String[] separated = methodAndUri.split(" ");                                                   //the message is split by spaces (i.e GET /index.html)
