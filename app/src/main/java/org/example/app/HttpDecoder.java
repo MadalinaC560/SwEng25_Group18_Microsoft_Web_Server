@@ -31,11 +31,11 @@ public class HttpDecoder{
                 requestLines.add(line);
             }
 
-            return Optional.of(requestLines);   
+            return Optional.of(requestLines);                                                               //return the request as an optional to prevent errors if its empty
 
         } 
         catch(IOException e){
-            return Optional.empty();
+            return Optional.empty();                                                                            
         }
     }
 
@@ -47,10 +47,10 @@ public class HttpDecoder{
             String[] separated = methodAndUri.split(" ");                                                   //the message is split by spaces (i.e GET /index.html)
 
             if(separated.length == 3){
-                String methodType = separated[0];
-                String uri = separated[1];
+                String methodType = separated[0];                                                           //extract the type of request from the array
+                String uri = separated[1];                                                                  //extract the uri from the array
 
-                HttpRequest request = builder(methodType, uri);
+                HttpRequest request = builder(methodType, uri);                                             //you can't create a httpRequest object, so instead we call the builder method
 
                 return Optional.of(request);
             }
@@ -63,11 +63,11 @@ public class HttpDecoder{
     }
 
     public static HttpRequest builder(String method, String uri){
-        HttpRequest.Builder requestBuilder = HttpRequest.newBuilder()
+        HttpRequest.Builder requestBuilder = HttpRequest.newBuilder()   
         .uri(URI.create(uri));
 
-        switch(method.toUpperCase()){
-            case "GET":
+        switch(method.toUpperCase()){                                                                      //switch statement to handle all request cases
+            case "GET":                                                                                    //The GET request is the currently only supported at this time.
                 requestBuilder.GET();
                 break;
             default:
@@ -75,7 +75,7 @@ public class HttpDecoder{
                 break;
         }
 
-        return requestBuilder.build();
+        return requestBuilder.build();                                                                     //returns the constructed HttpRequest
 
     }
 
