@@ -6,3 +6,6 @@ build
 
 # Ignore IntelliJ files
 .idea
+
+# Ignore placeholder web server uploads
+placeholder_web_server/uploads
