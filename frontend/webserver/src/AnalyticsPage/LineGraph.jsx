@@ -1,13 +1,6 @@
 import React from "react";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
-
-const sampleData = [
-    { name: 'User 1', siteInteractions: 5 },
-    { name: 'User 2', siteInteractions: 2 },
-    { name: 'User 3', siteInteractions: 6 },
-    { name: 'User 4', siteInteractions: 7 },
-    { name: 'User 5', siteInteractions: 1 },
-];
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts"; 
+import sampleData from "./SampleData";
 
 const LineGraph = () => {
     return (
