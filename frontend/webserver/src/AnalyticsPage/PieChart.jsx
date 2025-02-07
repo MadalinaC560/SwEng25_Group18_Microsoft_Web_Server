@@ -16,7 +16,7 @@ const PieGraph = () => {
   // Generate random colors for each slice
   const randomColors = sampleData.map(() => generateRandomHexColor());
   return (
-    <ResponsiveContainer width="100%" height={300}>
+    <ResponsiveContainer width={600} height={300}>
       <PieChart>
         <Pie
           data={sampleData}

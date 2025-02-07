@@ -41,13 +41,39 @@
   color: #888;
 }
 
+/*New CSS*/
 .container {
   display: flex;
-  gap: 5%; /* Adjust spacing */
+  justify-content: center; /* Centers the content */
+  align-items: center;
+  overflow: hidden; /* Optional: Prevents overflow */
 }
 
 .box {
-  width: 1000px; /*Change into percentage in future for flexible changes*/
-  height: 10%;
-  background-color: rgb(228, 244, 249);
+  flex: 1;
+  height: 100%;  /* Adjust the height to fill the container */
+  background-color: rgba(229, 245, 236, 0.829);
 }
+
+
+.greenBackground {
+  background-image: url("/greenBackground.png");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  width: 80vw;  /* Full width of the viewport */
+  height: 100vh; /* Full height of the viewport */
+  margin: 0;     /* Ensure no margin */
+  padding: 0;    /* Ensure no padding */
+}
+
+.greenGradientBackground {
+  background: linear-gradient(135deg, #00b140, #007a33); /* Green gradient */
+  background-size: cover;
+  background-position: center;
+  width: 80vw;  /* Full width of the viewport */
+  height: 100vh; /* Full height of the viewport */
+  margin: 0;     /* Ensure no margin */
+  padding: 0;    /* Ensure no padding */
+}
+

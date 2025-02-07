@@ -4,7 +4,7 @@ import sampleData from "./SampleData";
 
 const AreaChartComponent = () => {
   return (
-    <div style={{ width: "100%", height: 300 }}>
+    <div style={{ width: 600, height: 300 }}>
       <ResponsiveContainer width="100%" height="100%">
         <AreaChart data={sampleData} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
           <defs>
