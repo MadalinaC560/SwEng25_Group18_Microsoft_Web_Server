@@ -1,0 +1,133 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+body {
+    min-height: 100vh;
+    background: url("Backgrounds.jpg");
+    background-size: cover;
+    
+}
+
+
+.header {
+    display: flex;
+    justify-content: center; 
+    align-items: center;
+    padding: 1rem 2rem;
+    background: #E7E0E0;
+    position: relative; 
+}
+
+
+
+
+.nav-links-left {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    position: absolute;
+    left: 2rem; 
+}
+
+
+.nav-links-right {
+    display: flex;
+    gap: 2rem;
+    position: absolute;
+    right: 2rem;
+}
+
+
+.nav-links-left img {
+    width: 32px; 
+    height: 32px;
+    transition: transform 0.2s ease-in-out;
+}
+
+.nav-links-left img:hover {
+    transform: scale(1.1); 
+}
+
+
+.nav-links-right a {
+    text-decoration: none;
+    color: #333;
+    font-size: 1rem;
+    transition: color 0.2s ease-in-out;
+}
+
+.nav-links-right a:hover {
+    color: #8cc63f;
+}
+
+
+.logo-section {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+}
+
+
+.logo-section img {
+    height: 30px;
+}
+
+
+.login-container {
+    position: relative;
+    max-width: 400px;
+    height: 600px;
+    margin: 2rem auto;
+    padding: 2rem;
+    background: white;
+    border: 30px solid #8AC43C;
+    outline: 10px solid #4E9B11;
+    border-radius: 4px;
+    z-index: 2;
+}
+
+.leaf-icon {
+    width: 143px;
+    height: 121px;
+    margin: 0 auto 2rem;
+    display: block;
+}
+
+
+.input-field {
+    width: 100%;
+    padding: 0.8rem;
+    margin-bottom: 1rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 1rem;
+}
+
+.actions {
+    display: flex;
+    justify-content: space-between;
+    margin: 1rem 0;
+    font-size: 0.9rem;
+}
+
+.actions a {
+    text-decoration: none;
+    color: #8cc63f;
+}
+
+.login-btn {
+    width: 100%;
+    padding: 1rem;
+    background: #8cc63f;
+    color: white;
+    border: none;
+    border-radius: 25px;
+    font-size: 1.2rem;
+    cursor: pointer;
+    margin-top: 1rem;
+}
+
