@@ -41,20 +41,36 @@
   color: #888;
 }
 
-/*New CSS*/
+/* Updated CSS */
 .container {
   display: flex;
-  justify-content: center; /* Centers the content */
-  align-items: center;
-  overflow: hidden; /* Optional: Prevents overflow */
+  justify-content: space-between; /* Centers the graphs */
+  height: 40vh;                   /* Ensures uniform height */
+  min-height: 400px;              /* Prevents shrinking */
+  align-items: flex-start;
+  overflow: hidden;               /* Prevents overflow */
+  width: 100%;                    /* Ensures proper filling */
+  min-width: 300px;
+  flex-wrap: wrap; /* Ensures content doesn't overflow on smaller screens */
 }
 
 .box {
   flex: 1;
-  height: 100%;  /* Adjust the height to fill the container */
+  height: 100%;                   /* Ensures it fills the container */
   background-color: rgba(229, 245, 236, 0.829);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 400px; /* Prevents shrinking too much */
+  max-width: 600px; /* Optional: keeps graphs balanced */
 }
 
+.graph-title {
+  margin-top: 10px;
+  font-size: 1.2rem;
+  font-weight: bold;
+}
 
 .greenBackground {
   background-image: url("/greenBackground.png");
@@ -76,4 +92,17 @@
   margin: 0;     /* Ensure no margin */
   padding: 0;    /* Ensure no padding */
 }
+
+
+.app-container {
+  width: 100vw;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(to right, #eef2f3, #8ec5fc);
+  padding: 20px;
+}
+
 

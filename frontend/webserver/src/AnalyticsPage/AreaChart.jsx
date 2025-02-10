@@ -4,7 +4,7 @@ import sampleData from "./SampleData";
 
 const AreaChartComponent = () => {
   return (
-    <div style={{ width: 600, height: 300 }}>
+    <div style={{ width: "100%", height: "100%" }}>
       <ResponsiveContainer width="100%" height="100%">
         <AreaChart data={sampleData} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
           <defs>
@@ -14,7 +14,7 @@ const AreaChartComponent = () => {
             </linearGradient>
           </defs>
           <XAxis dataKey="name" />
-          <YAxis />
+          <YAxis domain={[0, "auto"]} />
           <CartesianGrid strokeDasharray="3 3" />
           <Tooltip />
           <Area type="monotone" dataKey="siteInteractions" stroke="#82ca9d" fillOpacity={1} fill="url(#interactions)" />
