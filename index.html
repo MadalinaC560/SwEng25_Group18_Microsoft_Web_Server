@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Azure Cloud Hosting</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header class="header">
+
+        <nav class="nav-links-left">
+            <a href="#Microsoft">
+                <img src="https://mailmeteor.com/logos/assets/PNG/Microsoft_Logo_512px.png" alt="Microsoft">
+            </a>
+            <a href="#Trinity">
+                <img src="tcd.png" alt="TCD">
+            </a>
+        </nav>
+
+        <h1>Azure Cloud Hosting</h1>
+    
+        <nav class="nav-links-right">
+            <a href="#about">About Us</a>
+            <a href="#contact">Contact</a>
+        </nav>
+    </header>
+    
+
+    <main>
+        <div class="login-container">
+            <img class="leaf-icon" src="leaf.png" alt="Leaf">
+            
+            <input type="text" class="input-field" id="input-field" placeholder="Username / Email">
+            <input type="password" class="input-field" id="pass-field" placeholder="Password">
+            
+            <div class="actions">
+                <a href="#forgot">Forgot Password?</a>
+                <a href="#signup">Sign Up</a>
+            </div>
+            
+            <button class="login-btn" id="login-btn">Log In</button>
+        </div>
+    </main>
+    <!-- <div class="plant"><img src="Plant.png"> </div> -->
+    <script>
+            console.log("JavaScript file is connected!");
+
+const inputFieldEl = document.getElementById("input-field");
+const passFieldEl = document.getElementById("pass-field");
+const loginBtnEl = document.getElementById("login-btn");
+
+loginBtnEl.addEventListener("click", function() {
+    console.log("it works");
+});
+    </script>
+
+</body>
+</html>
+
+
