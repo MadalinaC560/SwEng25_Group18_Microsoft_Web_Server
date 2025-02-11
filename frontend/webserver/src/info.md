@@ -1,13 +1,14 @@
-# Initial Setup  
+# Initial Setup
 
-App created using Vite  
+App created using Vite
 
 Run the app using:  
-    `npm run dev`
+ `npm run dev`
 
 Exit from terminal using:  
-    `Ctrl + C` (Windows)  
+ `Ctrl + C` (Windows)
 
-Additional packages used & installation:  
+Additional packages used & installation:
 
 React Router Dom: `npm install react-router-dom`  
+Recharts: 'npm install recharts'

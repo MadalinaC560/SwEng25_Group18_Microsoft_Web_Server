@@ -1,7 +1,8 @@
-import AreaChartComponent from "./analyticsComponents/AreaChart";
-import LineGraph from "./analyticsComponents/LineGraph";
-import BarGraph from "./analyticsComponents/BarGraph";
-import PieGraph from "./analyticsComponents/PieChart";
+import AreaChartComponent from "../components/analyticsComponents/AreaChart";
+import LineGraph from "../components/analyticsComponents/LineGraph";
+import BarGraph from "../components/analyticsComponents/BarGraph";
+import PieGraph from "../components/analyticsComponents/PieChart";
+import "../css/analytics.css";
 
 function AnalyticsPage() {
   return (
