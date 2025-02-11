@@ -1,14 +1,18 @@
-import { useState } from "react";
-import "./App.css";
-import AnalyticsPage from "./pages/analytics";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import Landing from './pages/landing.jsx';
 
 //Change the greenBackground to a suitable one in App.css
 function App() {
+
   return (
-    <>
-      <AnalyticsPage />
-    </>
-  );
+    <Router>
+      <Routes>
+        <Route path="/" element={<Landing />} /> {/* Default Page */}
+      </Routes>
+    </Router>
+  )
 }
 
-export default App;
+/* App.jsx needed to configure routing to other pages */
+
+export default App
