@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WikiBoredom</title>
+
+    <style>
+        .center {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            width: 100vw;
+        }
+    </style>
+
+</head>
+
+
+<html>
+    <body>
+        <div class="center">
+            <h1>WikiBoredom</h1>
+            <h3 id="pageLink">Are you bored? Get a random Wikipedia page to scroll through.</h3>
+            <button id="getPage">Go</button>
+
+        </div>
+    </body>
+</html>
+
+<script>
+
+document.getElementById("getPage").addEventListener("click", function () {
+    window.location.href = "https://en.wikipedia.org/wiki/Special:Random";
+});
+
+</script>

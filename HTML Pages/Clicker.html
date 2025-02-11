@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clicker</title>
+
+    <style>
+        .clicker-body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            width: 100vw;
+        }
+    </style>
+
+</head>
+
+
+<html>
+    <body>
+        <div class="clicker-body">
+            <h1>Welcome to Clicker</h1>
+            <p>The worlds most interactive clicker game!</p>
+
+            <button id="click">Click Here!</button>
+            <p id = "result"></p>
+        </div>
+    </body>
+</html>
+
+<script>
+    var count = 0;
+    var button = document.getElementById("click");
+    var result = document.getElementById("result");
+
+    button.onclick = function() {
+        count++;
+        result.innerHTML = count;
+
+        if (count == 10) {
+            alert("You got 10 clicks! have a cookie 🍪")
+        }
+        else if (count == 30) {
+            alert("You're a committed one, aren't you?")
+        }
+        else if (count == 50) {
+            alert("Do you think your ancestors are proud of you?")
+        }
+        else if (count == 100) {
+            alert("Dude... seriously go touch some grass...")
+        }
+
+    }
+</script>
