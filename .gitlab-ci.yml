@@ -1,0 +1,29 @@
+image: openjdk:21-jdk-slim
+
+stages:
+  - build
+  - test
+  - package
+
+cache:
+  paths:
+    - .gradle/
+    - build/
+
+build:
+  stage: build
+  script:
+    - ./gradlew build -x test
+
+test:
+  stage: test
+  script:
+    - ./gradlew test
+
+package:
+  stage: package
+  script:
+    - ./gradlew assemble
+  artifacts:
+    paths:
+      - build/libs/
