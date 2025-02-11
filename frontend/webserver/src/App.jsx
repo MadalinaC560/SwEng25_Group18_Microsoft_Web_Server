@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Landing from './pages/landing.jsx';
 
+//Change the greenBackground to a suitable one in App.css
 function App() {
 
   return (
