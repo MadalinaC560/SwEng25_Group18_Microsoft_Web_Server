@@ -1,31 +1,44 @@
+package com.webserver.core;
+
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
-//import com.webserver.util.Logger;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import com.webserver.util.Logger;
+import com.webserver.util.ConfigLoader;
 
-public class GracefulServer
-{
-    private static final int PORT = 8080;
-    private boolean running = true; // control flag
+public class Server {
     private final ServerSocket serverSocket;
+    private final ExecutorService threadPool;
+    private final ConfigLoader config;
+    private boolean running = true;
 
     public Server() throws IOException {
-        this.serverSocket = new ServerSocket(PORT);
+        // Load configuration
+        this.config = new ConfigLoader();
+
+        // Initialize server socket with configured port
+        this.serverSocket = new ServerSocket(config.getPort());
+        this.threadPool = Executors.newFixedThreadPool(config.getMaxThreads());
+
+        Logger.info("Server initialized with:");
+        Logger.info("Port: " + config.getPort());
+        Logger.info("Web root: " + config.getWebRoot());
+        Logger.info("Max threads: " + config.getMaxThreads());
     }
 
     public void start() {
         Runtime.getRuntime().addShutdownHook(new Thread(this::stop));
-
-        Logger.info("Server started on port " + PORT);
+        Logger.info("Server started on port " + config.getPort());
 
         while(running) {
             try {
                 Socket clientSocket = serverSocket.accept();
                 Logger.info("Connection received from " + clientSocket.getInetAddress());
 
-                // Create and use ConnectionHandler instead of directly closing socket
                 ConnectionHandler handler = new ConnectionHandler(clientSocket);
-                handler.handle();
+                threadPool.execute(handler);
 
             } catch (IOException e) {
                 if(running) {
@@ -40,6 +53,7 @@ public class GracefulServer
     public void stop() {
         Logger.info("Shutting down gracefully...");
         running = false;
+        threadPool.shutdown();
         try {
             serverSocket.close();
         } catch (IOException e) {
@@ -47,15 +61,12 @@ public class GracefulServer
         }
     }
 
-    private static void main(String[] args)
-    {
+    public static void main(String[] args) {
         try {
             Server server = new Server();
             server.start();
         } catch (IOException e) {
             Logger.error("Server failed to start", e);
         }
-
     }
-
 }
