@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://fonts.googleapis.com/css2?family=Atma:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <title>WikiBoredom</title>
+
+    <style>
+        .center {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        h1 {
+            font-family: "Atma", serif;
+            font-weight: 700;
+            font-style: normal;
+        }
+
+        h3 {
+            font-family: "Atma", serif;
+            font-weight: 400;
+            font-style: normal;
+        }
+
+        p {
+            font-family: "Atma", serif;
+            font-weight: 400;
+            font-style: normal;
+        }
+        
+        .button {
+            font-family: "Atma", serif;
+            font-weight: 400;
+            font-style: normal;
+        }
+
+    </style>
+
+</head>
+
+
+<html>
+    <body>
+        <div class="center">
+            <img src="https://www.wikipedia.org/portal/wikipedia.org/assets/img/Wikipedia-logo-v2.png" width="300" height="300">
+
+            <h1>WikiBoredom</h1>
+            <h3 id="pageLink">Are you bored? Get a random Wikipedia page to scroll through.</h3>
+            <button class="button" id="getPage">Go</button>
+            <p>Who knows what you'll come across?</p>
+
+        </div>
+    </body>
+</html>
+
+<script>
+
+document.getElementById("getPage").addEventListener("click", function () {
+    window.location.href = "https://en.wikipedia.org/wiki/Special:Random";
+});
+
+</script>
