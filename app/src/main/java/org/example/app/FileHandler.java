@@ -20,11 +20,19 @@ public class FileHandler {
 
     //Reads a file and returns its contents as a byte array
     //throws an IOException if the file does not exist or can't be read
-    //still need to add more checks to test if the filepat is properly formed
+    //still need to add more checks to test if the filepath is properly formed
     public byte[] readfile(String filepath) throws IOException
     {
 
-        File file = new File(webRoot, filepath);
+        String sanitizedPath = sanitizePath(filepath);
+        File file = new File(webRoot, sanitizedPath);
+        if (!file.exists() || !file.isFile()) {
+            throw new IOException("File not found: " + filepath);
+        }
+        if(!file.getCanonicalPath().startsWith(webRoot.getCanonicalPath()))
+        {
+            throw new IOException("Access denied: " + filepath);
+        }
         FileInputStream fileInputStream = new FileInputStream(file);
         byte [] fileBytes = new byte[(int)file.length()];
         try
@@ -59,6 +67,18 @@ public class FileHandler {
         {
             throw new RuntimeException(e);
         }
+    }
+    private String sanitizePath(String filepath)
+    {
+        filepath = filepath.replace("\\", "/");
+        if (filepath.startsWith("/"))
+        {
+            filepath = filepath.substring(1);
+        }
+        while (filepath.contains("..")) {
+            filepath = filepath.replace("..", "");
+        }
+        return filepath;
     }
 }
 
