@@ -11,6 +11,7 @@ import java.io.InputStreamReader;
 import java.util.ArrayList;
 
 import com.webserver.model.HttpRequest;
+import com.webserver.util.Logger;
 
 public class HttpParser {
     public enum HttpMethod {
@@ -52,18 +53,37 @@ public class HttpParser {
         // 4. Return all lines including headers and body
 
         List<String> lines = new ArrayList<>();
+        try {
+            BufferedReader br = new BufferedReader(new InputStreamReader(inputStream));
+            String currentLine;
 
-        BufferedReader br = new BufferedReader(new InputStreamReader(inputStream));
-        String currentLine;
+            try {
+                while ((currentLine = br.readLine()) != null && !currentLine.isEmpty()) {
+                    lines.add(currentLine);
+                }
 
-        try{
-            while((currentLine = br.readLine()) != null && !currentLine.isEmpty() ){
-                lines.add(currentLine);
+                // add logic to read the body if Content-Length header is present
+                String contentLengthHeader = lines.stream()
+                        .filter(h -> h.toLowerCase().startsWith("content-length:"))
+                        .findFirst()
+                        .orElse(null);
+
+                if (contentLengthHeader != null) {
+                    int contentLength = Integer.parseInt(
+                            contentLengthHeader.split(":")[1].trim()
+                    );
+                    char[] body = new char[contentLength];
+                    br.read(body, 0, contentLength);
+                    lines.add(new String(body));
+                }
+
+                return Optional.of(lines);
+
+            } catch (IOException e) {
+                return Optional.empty();
             }
-
-            return Optional.of(lines);
-
-        }catch(IOException e){
+        } catch (Exception e) {
+            Logger.error("Error reading HTTP request", e);
             return Optional.empty();
         }
     }
@@ -74,52 +94,59 @@ public class HttpParser {
         // 2. Extract and organize headers into a map
         // 3. Handle the body if present
         // 4. Create and return HttpRequest object
+        try {
+            String[] firstLine = requestLines.get(0).split(" "); //splits into METHOD, PATH, and http VERSION
 
-        String[] firstLine = requestLines.get(0).split(" "); //splits into METHOD, PATH, and http VERSION
+            if (firstLine.length != 3) {
+                Logger.error("Invalid request line: " + requestLines.get(0), null);
+                throw new IllegalArgumentException("Invalid first line");
+            }
 
-        if(firstLine.length != 3){
-            throw new IllegalArgumentException("Invalid first line");
-        }
+            String method = firstLine[0];
+            if (method == null) {
+                Logger.error("Unsupported HTTP method: " + firstLine[0], null);
+                throw new IllegalArgumentException("Unsupported HTTP method");
+            }
 
-        String method = firstLine[0];
-        
-        String path = firstLine[1];
-        String httpVersion = firstLine[2]; //not used with our httpRequest class, possible implementation in the future
+            String path = firstLine[1];
+            String httpVersion = firstLine[2]; //not used with our httpRequest class, possible implementation in the future
 
-        Map<String, List<String>> headersAndValues = new HashMap<>(); //map for storing headers and assosciated values 
+            Map<String, List<String>> headersAndValues = new HashMap<>(); //map for storing headers and assosciated values
 
-        for(int i = 1; i < requestLines.size(); i++){
-            String currentHeader = requestLines.get(i);
-            String[] headerComponents = currentHeader.split(": ", 2);
+            for (int i = 1; i < requestLines.size(); i++) {
+                String currentHeader = requestLines.get(i);
+                String[] headerComponents = currentHeader.split(": ", 2);
 
-            if(headerComponents.length == 2){
-                String key= headerComponents[0].trim();
-                String value = headerComponents[1].trim();
+                if (headerComponents.length == 2) {
+                    String key = headerComponents[0].trim();
+                    String value = headerComponents[1].trim();
 
-                if(!headersAndValues.containsKey(key)){//check if the key already exists, then create a new list
-                    headersAndValues.put(key, new ArrayList<>());
+                    if (!headersAndValues.containsKey(key)) {//check if the key already exists, then create a new list
+                        headersAndValues.put(key, new ArrayList<>());
+                    }
+                    headersAndValues.get(key).add(value);
+                } else {
+                    System.out.println("There was an error at index: " + i);
                 }
-                headersAndValues.get(key).add(value);
             }
 
-            else{
-                System.out.println("There was an error at index: " + i);
+            String body = "";
+            List<String> contentLengthHeader = headersAndValues.get("Content-Length");
+
+            if (contentLengthHeader != null) {   //handles the case when the body is a known fixed length
+                try {
+                    int lengthOfContent = Integer.parseInt(contentLengthHeader.get(0));
+                    body = readBody(input, lengthOfContent);
+                } catch (Exception e) {
+                    throw new IOException("Invalid header for Content-length");
+                }
             }
+
+            return new HttpRequest(method, path, headersAndValues, body);
+        } catch (Exception e) {
+            Logger.error("Error building HTTP request", e);
+            throw new IllegalArgumentException("Error building HTTP request");
         }
-
-        String body = null;
-        List<String> contentLengthHeader = headersAndValues.get("Content-Length");
-
-        if(contentLengthHeader != null){   //handles the case when the body is a known fixed length
-            try {
-                int lengthOfContent = Integer.parseInt(contentLengthHeader.get(0));
-                body = readBody(input, lengthOfContent);
-            } catch (Exception e) {
-                throw new IOException("Invalid header for Content-length");
-            }
-        }
-        
-        return new HttpRequest(method, path, headersAndValues, body);
     }
 
     private String readBody(InputStream input, int bodyLength) throws IOException{
