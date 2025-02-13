@@ -1,6 +1,7 @@
 import React, { useEffect } from "react";
 import cloudl from "../images/cloudl.png";
 import "../css/landing.css";
+import { useNavigate } from "react-router-dom";
 
 function Landing() {
   const handleLogIn = () => {

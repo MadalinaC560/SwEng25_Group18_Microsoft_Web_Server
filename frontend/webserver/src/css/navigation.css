@@ -1,0 +1,98 @@
+/* Header container */
+.header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between; /* Space out logo and nav */
+    /* background-color: #5082b400; */
+    padding: 1rem;
+    /* box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); */
+    width: 100%; /* Span the entire width */
+  }
+  
+  /* Logo link styling */
+  .logo-link {
+    display: flex;
+    align-items: center;
+    text-decoration: none; /* Remove underline */
+  }
+  
+  /* Logo image styling */
+  .logo {
+    height: 2.5rem; /* Adjust size as needed */
+    width: auto; /* Maintain aspect ratio */
+  }
+  
+  /* Navigation bar styling */
+  nav {
+    display: flex;
+    align-items: center;
+  }
+  
+  /* NavLink styling */
+  nav a {
+    color: #ecf0f1;
+    text-decoration: none;
+    padding: 0.5rem 1rem;
+    margin: 0 0.5rem;
+    border-radius: 4px;
+    transition: all 0.3s ease;
+    font-size: 1rem;
+    font-weight: 500;
+    position: relative;
+    overflow: hidden;
+  }
+  
+  /* Hover effect for navigation links */
+  nav a:hover {
+    background-color: #34495e;
+    color: #ffffff;
+  }
+  
+  /* Active link styling */
+  nav a.active {
+    background-color: #1abc9c;
+    color: #ffffff;
+    font-weight: bold;
+  }
+  
+  /* Hover animation for navigation links */
+  nav a::after {
+    content: "";
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background-color: #1abc9c;
+    transform: scaleX(0);
+    transform-origin: right;
+    transition: transform 0.3s ease;
+  }
+  
+  nav a:hover::after {
+    transform: scaleX(1);
+    transform-origin: left;
+  }
+  
+  /* Responsive design for smaller screens */
+  @media (max-width: 768px) {
+    .header {
+      flex-direction: column;
+      padding: 0.5rem;
+    }
+  
+    .logo-link {
+      margin-bottom: 1rem; /* Add spacing between logo and nav */
+    }
+  
+    nav {
+      flex-direction: column;
+      width: 100%;
+    }
+  
+    nav a {
+      width: 100%;
+      text-align: center;
+      margin: 0.25rem 0;
+    }
+  }
