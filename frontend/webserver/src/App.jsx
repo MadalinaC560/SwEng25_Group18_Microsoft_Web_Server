@@ -1,17 +1,18 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import Login from './pages/login.jsx';
+import Login from "./pages/login";
+import Register from "./pages/register";
 
 function App() {
-
-  return (
-    <Router>
-      <Routes>
-        <Route path="/" element={<Login />} /> {/* Default Page */}
-      </Routes>
-    </Router>
-  )
+    return (
+        <Router>
+            <Routes>
+                {/* Ensure there is a route for "/" */}
+                <Route path="/" element={<Login />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/register" element={<Register />} />
+            </Routes>
+        </Router>
+    );
 }
 
-/* App.jsx needed to configure routing to other pages */
-
-export default App
+export default App;
