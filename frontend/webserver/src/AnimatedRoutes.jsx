@@ -6,9 +6,9 @@ import {
 } from "react-router-dom";
 import { AnimatePresence } from "framer-motion";
 import Landing from "./pages/landing.jsx";
-import AnalyticsPage from "./pages/analytics.jsx";
 import AboutUs from "./pages/aboutUs.jsx";
 import HomePage from "./pages/home.jsx";
+import UserPage from "./pages/userPage.jsx";
 import NotFound from "./pages/notfoundpage.jsx";
 import PageWrapper from "./components/animationComponents/PageWrapper.jsx";
 
@@ -27,14 +27,6 @@ function AnimatedRoutes() {
           }
         />
         <Route
-          path="/analytics"
-          element={
-            <PageWrapper>
-              <AnalyticsPage />
-            </PageWrapper>
-          }
-        />
-        <Route
           path="/aboutUs"
           element={
             <PageWrapper>
@@ -47,6 +39,14 @@ function AnimatedRoutes() {
           element={
             <PageWrapper>
               <HomePage />
+            </PageWrapper>
+          }
+        />
+        <Route
+          path="/user"
+          element={
+            <PageWrapper>
+              <UserPage />
             </PageWrapper>
           }
         />

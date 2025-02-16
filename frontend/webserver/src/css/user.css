@@ -1,0 +1,119 @@
+/* Container for the entire component */
+.container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start; /* Align content to the top */
+    width: 100%;
+    padding: 0.5rem 1rem; /* Reduced top padding to move radio buttons up */
+    box-sizing: border-box;
+    min-height: 100vh; /* Ensure the container takes at least the full viewport height */
+  }
+  
+  /* Radio buttons container */
+  .radio-inputs {
+    display: flex;
+    border-radius: 0.5rem;
+    background-color: #70c489;
+    box-sizing: border-box;
+    font-size: 14px;
+    width: 100%;
+    max-width: 600px; /* Constrain only the radio buttons */
+    overflow: hidden; /* Ensures no gaps between buttons */
+  }
+  
+  /* Individual radio button styling */
+  .radio-inputs .radio {
+    flex: 1; /* Ensures all buttons are of equal width */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    transition: all 0.3s ease-in-out; /* Smooth transition for size changes */
+  }
+  
+  .radio-inputs .radio input {
+    display: none;
+  }
+  
+  .radio-inputs .radio .name {
+    display: flex;
+    cursor: pointer;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    padding: 0.5rem 0.8rem;
+    color: #1d1d29;
+    transition: all 0.3s ease-in-out; /* Smooth transition for size changes */
+    width: 100%; /* Ensures the button spans the full width */
+    text-align: center;
+  }
+  
+  /* Make the selected radio button larger */
+  .radio-inputs .radio input:checked + .name {
+    background-color: #e8e8e8;
+    font-weight: 600;
+    transform: scale(1.1); /* Scale up the selected button */
+  }
+  
+  /* Make the unselected radio buttons smaller */
+  .radio-inputs .radio:not(:has(input:checked)) .name {
+    transform: scale(0.9); /* Scale down the unselected buttons */
+  }
+  
+  .radio-inputs .radio input + .name:hover {
+    color: #fff;
+  }
+  
+  .radio-inputs .radio input:checked + .name:hover {
+    color: #1d1d29;
+  }
+  
+  .radio-inputs .radio input:checked + .name::after,
+  .radio-inputs .radio input:checked + .name::before {
+    content: "";
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    background-color: #70c489;
+    bottom: 0;
+  }
+  
+  .radio-inputs .radio input:checked + .name::after {
+    right: -10px;
+    border-bottom-left-radius: 300px;
+    box-shadow: -3px 3px 0px 3px #e8e8e8;
+  }
+  
+  .radio-inputs .radio input:checked + .name::before {
+    left: -10px;
+    border-bottom-right-radius: 300px;
+    box-shadow: 3px 3px 0px 3px #e8e8e8;
+  }
+  
+  /* Content container */
+  .content-container {
+    width: 100%; /* Full width */
+    margin-top: 1rem;
+    padding: 1rem;
+    border: 1px solid #ccc;
+    border-radius: 0.5rem;
+    background-color: #f9f9f9;
+    text-align: center;
+    overflow: hidden; /* Prevent horizontal scrolling */
+  }
+  
+  /* Graph container */
+  .graph {
+    width: 100%;
+    min-width: 0; /* Allow the graph to shrink if necessary */
+    height: 300px;
+  }
+  
+  /* Center the content container */
+  .content-wrapper {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+    margin-top: auto; /* Push the content to the bottom */
+  }

@@ -5,6 +5,9 @@ import cloudl from "../../images/cloudl.png";
 function Navigation() {
   const location = useLocation(); // Get the current location object
 
+  // Links to conditionally render
+  const conditionalLinks = [{ to: "/user", text: "UserAccount" }];
+
   return (
     <div className="header">
       {/* Logo link outside the nav */}
@@ -13,14 +16,16 @@ function Navigation() {
       </Link>
 
       {/* Conditionally render the navigation bar */}
-
       <nav>
         <NavLink to="/" end>
           Landing Page
         </NavLink>
-        {location.pathname !== "/" && (
-          <NavLink to="/analytics">Analytics</NavLink>
-        )}
+        {location.pathname !== "/" &&
+          conditionalLinks.map((link) => (
+            <NavLink key={link.to} to={link.to}>
+              {link.text}
+            </NavLink>
+          ))}
         <NavLink to="/aboutUs">About Us</NavLink>
       </nav>
     </div>

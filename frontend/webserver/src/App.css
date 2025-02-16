@@ -52,4 +52,12 @@
   padding: 20px;
 }
 
+.bg-custom {
+  background-image: url('./images/greenBackground.png');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+
 
