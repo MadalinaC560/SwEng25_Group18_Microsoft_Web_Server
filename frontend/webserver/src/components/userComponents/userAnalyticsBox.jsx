@@ -5,7 +5,7 @@ import LineGraph from "../analyticsComponents/LineGraph";
 import PieGraph from "../analyticsComponents/PieChart";
 
 function UserAnalyticsBox() {
-  const [selectedOption, setSelectedOption] = useState("HTML");
+  const [selectedOption, setSelectedOption] = useState("AreaChart");
 
   const handleOptionChange = (event) => {
     setSelectedOption(event.target.value);
