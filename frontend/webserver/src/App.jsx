@@ -1,18 +1,15 @@
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import Landing from './pages/landing.jsx';
+import { BrowserRouter as Router } from "react-router-dom";
+import AnimatedRoutes from "./AnimatedRoutes.jsx";
+import Navigation from "./components/navigationComponents/Navigation.jsx";
 
-//Change the greenBackground to a suitable one in App.css
+import "./App.css";
 function App() {
-
   return (
     <Router>
-      <Routes>
-        <Route path="/" element={<Landing />} /> {/* Default Page */}
-      </Routes>
+      <Navigation />
+      <AnimatedRoutes />
     </Router>
-  )
+  );
 }
 
-/* App.jsx needed to configure routing to other pages */
-
-export default App
+export default App;
