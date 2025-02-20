@@ -1,14 +1,14 @@
 package com.webserver.http;
 
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.util.ArrayList;
 
 import com.webserver.model.HttpRequest;
 import com.webserver.util.Logger;
@@ -96,7 +96,7 @@ public class HttpParser {
         // 4. Create and return HttpRequest object
         try {
             String[] firstLine = requestLines.get(0).split(" "); //splits into METHOD, PATH, and http VERSION
-
+            System.out.println("First Line: " + requestLines.get(0));   //this is for debugging ===========================
             if (firstLine.length != 3) {
                 Logger.error("Invalid request line: " + requestLines.get(0), null);
                 throw new IllegalArgumentException("Invalid first line");
@@ -129,6 +129,12 @@ public class HttpParser {
                     System.out.println("There was an error at index: " + i);
                 }
             }
+            System.out.println("Request Lines: ");
+            for (int i = 0; i < requestLines.size(); i++) {
+                System.out.println(i + ": " + requestLines.get(i));
+            }
+            System.out.println("Headers: " + headersAndValues);  // also for dubugging ================================
+
 
             String body = "";
             List<String> contentLengthHeader = headersAndValues.get("Content-Length");
@@ -167,6 +173,7 @@ public class HttpParser {
             bytesReadTracker += bytesRead;
         }
 
+        System.out.println("Body Read: " + new String(bytesOfBody));    //testín delete this ================================
 
         return new String(bytesOfBody);
     }
