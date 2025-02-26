@@ -71,8 +71,12 @@ public class HttpParser {
                     int contentLength = Integer.parseInt(
                             contentLengthHeader.split(":")[1].trim()
                     );
+
                     char[] body = new char[contentLength];
-                    br.read(body, 0, contentLength);
+                    int bytesRead = br.read(body, 0, contentLength);
+                    if(bytesRead != contentLength){
+                        throw new IOException("Undexpected stream end when reading body...");
+                    }
                     lines.add(new String(body));
                 }
 
@@ -108,8 +112,19 @@ public class HttpParser {
             String httpVersion = firstLine[2]; //not used with our httpRequest class, possible implementation in the future
 
             Map<String, List<String>> headersAndValues = new HashMap<>(); //map for storing headers and assosciated values
+            int headerEndIndex = requestLines.size();
 
-            for (int i = 1; i < requestLines.size(); i++) {
+            boolean hasBody = false;
+            for(int i = 1; i < requestLines.size(); i++){
+                String currentLine = requestLines.get(i);
+                if(currentLine.toLowerCase().startsWith("content-length:")){
+                    hasBody = true;
+                    headerEndIndex = i + 1;
+                    break;
+                }
+            }
+            
+            for (int i = 1; i < headerEndIndex; i++) {
                 String currentHeader = requestLines.get(i);
                 String[] headerComponents = currentHeader.split(":\\s*", 2);
 
@@ -135,11 +150,8 @@ public class HttpParser {
 
 
             String body = "";
-            List<String> contentLengthHeader = headersAndValues.get("Content-Length");
-
-            if (contentLengthHeader != null && !contentLengthHeader.isEmpty()) {   //handles the case when the body is a known fixed length
-                int lengthOfContent = Integer.parseInt(contentLengthHeader.get(0));
-                body = readBody(input, lengthOfContent);
+            if (hasBody){
+                body = requestLines.get(requestLines.size()-1);
             }
 
             System.out.println("Method: " + method);
@@ -153,28 +165,5 @@ public class HttpParser {
             Logger.error("Error building HTTP request", e);
             throw new IllegalArgumentException("Error building HTTP request");
         }
-    }
-
-    private String readBody(InputStream input, int bodyLength) throws IOException{
-        if(bodyLength == 0){
-            return "";
-        }
-
-        byte[] bytesOfBody = new byte[bodyLength];
-        int bytesReadTracker = 0;
-
-        while(bytesReadTracker <= bodyLength){ //while loop ensures the entire InputStream is read, as it may not have everything available at one time
-            int bytesRead = input.read(bytesOfBody, bytesReadTracker, bodyLength - bytesReadTracker);
-
-            if(bytesRead == -1){
-                throw new IOException("Unexpected end when reading body, check for errors");
-            }
-
-            bytesReadTracker += bytesRead;
-        }
-
-        System.out.println("Body Read: " + new String(bytesOfBody));    //testín delete this ================================
-
-        return new String(bytesOfBody);
     }
 }
