@@ -56,8 +56,7 @@ public class HttpParser {
         try {
             BufferedReader br = new BufferedReader(new InputStreamReader(inputStream));
             String currentLine;
-
-            try {
+            
                 while ((currentLine = br.readLine()) != null && !currentLine.isEmpty()) {
                     lines.add(currentLine);
                 }
@@ -79,9 +78,6 @@ public class HttpParser {
 
                 return Optional.of(lines);
 
-            } catch (IOException e) {
-                return Optional.empty();
-            }
         } catch (Exception e) {
             Logger.error("Error reading HTTP request", e);
             return Optional.empty();
@@ -102,7 +98,7 @@ public class HttpParser {
                 throw new IllegalArgumentException("Invalid first line");
             }
 
-            String method = firstLine[0];
+            String method = firstLine[0].toUpperCase();
             if (method == null) {
                 Logger.error("Unsupported HTTP method: " + firstLine[0], null);
                 throw new IllegalArgumentException("Unsupported HTTP method");
@@ -115,7 +111,7 @@ public class HttpParser {
 
             for (int i = 1; i < requestLines.size(); i++) {
                 String currentHeader = requestLines.get(i);
-                String[] headerComponents = currentHeader.split(": ", 2);
+                String[] headerComponents = currentHeader.split(":\\s*", 2);
 
                 if (headerComponents.length == 2) {
                     String key = headerComponents[0].trim();
@@ -126,9 +122,11 @@ public class HttpParser {
                     }
                     headersAndValues.get(key).add(value);
                 } else {
-                    System.out.println("There was an error at index: " + i);
+                    Logger.error("Malformed header: " + currentHeader, null);
+                    throw new IllegalArgumentException("Malformed header" + currentHeader);
                 }
             }
+
             System.out.println("Request Lines: ");
             for (int i = 0; i < requestLines.size(); i++) {
                 System.out.println(i + ": " + requestLines.get(i));
@@ -139,16 +137,18 @@ public class HttpParser {
             String body = "";
             List<String> contentLengthHeader = headersAndValues.get("Content-Length");
 
-            if (contentLengthHeader != null) {   //handles the case when the body is a known fixed length
-                try {
-                    int lengthOfContent = Integer.parseInt(contentLengthHeader.get(0));
-                    body = readBody(input, lengthOfContent);
-                } catch (Exception e) {
-                    throw new IOException("Invalid header for Content-length");
-                }
+            if (contentLengthHeader != null && !contentLengthHeader.isEmpty()) {   //handles the case when the body is a known fixed length
+                int lengthOfContent = Integer.parseInt(contentLengthHeader.get(0));
+                body = readBody(input, lengthOfContent);
             }
 
+            System.out.println("Method: " + method);
+            System.out.println("Path: " + path);
+            System.out.println("Headers: " + headersAndValues);
+            System.out.println("Body: " + body);
+
             return new HttpRequest(method, path, headersAndValues, body);
+
         } catch (Exception e) {
             Logger.error("Error building HTTP request", e);
             throw new IllegalArgumentException("Error building HTTP request");
@@ -163,7 +163,7 @@ public class HttpParser {
         byte[] bytesOfBody = new byte[bodyLength];
         int bytesReadTracker = 0;
 
-        while(bytesReadTracker < bodyLength){ //while loop ensures the entire InputStream is read, as it may not have everything available at one time
+        while(bytesReadTracker <= bodyLength){ //while loop ensures the entire InputStream is read, as it may not have everything available at one time
             int bytesRead = input.read(bytesOfBody, bytesReadTracker, bodyLength - bytesReadTracker);
 
             if(bytesRead == -1){
