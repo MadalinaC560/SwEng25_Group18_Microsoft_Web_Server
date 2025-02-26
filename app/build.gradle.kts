@@ -9,6 +9,28 @@ plugins {
 dependencies {
     implementation("org.apache.commons:commons-text")
     implementation(project(":utilities"))
+
+    //Azure dependencies
+
+    //core azure implementation
+    implementation("com.azure:azure-core:1.45.0")
+
+    //authenticates app to access azure resources
+    implementation("com.azure:azure-identity:1.10.4") 
+    
+    //for file uploads
+    implementation("com.azure:azure-storage-blob:12.21.2")
+
+    //SQL database for storing and managing user data
+    implementation("mysql:mysql-connector-java:8.0.33")
+    implementation("org.springframework.boot:spring-boot-starter-data-jpa")
+        
+    //for logs in azure portal
+    implementation("com.microsoft.azure:applicationinsights-core:2.6.4")
+
+    //store config settings within Azure
+    implementation("com.azure.spring:azure-spring-boot-starter-appconfiguration:4.8.0")
+
 }
 
 application {
