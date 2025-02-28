@@ -13,8 +13,8 @@ dependencies {
     //Azure dependencies
 
     //core azure implementation
-    implementation("com.azure:azure-core:1.45.0")
-
+    implementation platform('com.azure:azure-sdk-bom:{bom_version_to_target}')
+    
     //authenticates app to access azure resources
     implementation("com.azure:azure-identity:1.10.4") 
     
