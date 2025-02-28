@@ -80,14 +80,14 @@ public class ResponseBuilder {
         bw.write("\r\n");                                                               //marks start of new line
         
         List<String> headersAsStrings = buildHeaderStrings(response.getHeaders());      //returns the headers as list of strings
+
         for(int i= 0; i < headersAsStrings.size(); i++){                                //the for loop writes each header to the output stream
             bw.write(headersAsStrings.get(i));
             bw.write("\r\n");
         }                 
 
-        bw.write("\r\n");
-
-        if(!response.getBody().isEmpty()){                                              //checks if there is a body
+        if(!response.getBody().isEmpty()){   
+            bw.write("\r\n");                                           //checks if there is a body
             bw.write(response.getBody());                                               //writes the body to ouput stream
         }                               
 
