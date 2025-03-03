@@ -14,6 +14,7 @@ import {
   Shield
 } from 'lucide-react';
 import { JSX } from "react";
+import Image from 'next/image';
 
 // Team member type definition
 interface TeamMember {
@@ -74,7 +75,7 @@ const teamMembers: TeamMember[] = [
   {
     name: "Daniel Fitzgerald",
     role: "CTO",
-    image: "static/team/Screenshot_2025-02-17_at_15.32.37.png",
+    image: "/static/team/Screenshot_2025-02-17_at_15.32.37.png",
     bio: "Former senior engineer at AWS, specialized in distributed systems",
     social: {
       github: "https://github.com",
@@ -159,7 +160,7 @@ export default function AboutPage() {
         <section className="text-center space-y-4">
           <h1 className="text-4xl font-bold">About Cloudle</h1>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            We're on a mission to make cloud infrastructure management simple, 
+            We are on a mission to make cloud infrastructure management simple,
             efficient, and accessible to developers worldwide.
           </p>
         </section>
@@ -190,10 +191,13 @@ export default function AboutPage() {
               <Card key={index} className="overflow-hidden">
                 <CardContent className="p-6 space-y-4">
                   <div className="space-y-4">
-                    <img
+                    <Image
                       src={member.image}
                       alt={member.name}
+                      width={500}
+                      height={300}
                       className="w-24 h-24 rounded-full mx-auto"
+
                     />
                     <div className="text-center">
                       <h3 className="text-xl font-semibold">{member.name}</h3>
@@ -241,7 +245,7 @@ export default function AboutPage() {
         <section className="max-w-2xl mx-auto text-center space-y-4">
           <h2 className="text-3xl font-bold">Get in Touch</h2>
           <p className="text-gray-600">
-            Have questions about Cloudle? We'd love to hear from you.
+            Have questions about Cloudle? We would love to hear from you.
           </p>
           <Button asChild>
             <a href="mailto:contact@cloudle.com">Contact Us</a>

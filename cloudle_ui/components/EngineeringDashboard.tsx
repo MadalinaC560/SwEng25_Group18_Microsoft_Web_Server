@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { 
@@ -16,27 +16,18 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import {
-  ArrowLeft,
   RefreshCw,
   AlertCircle,
   Server,
   Database,
-  Globe,
   Cpu,
   HardDrive,
   Activity,
-  Zap,
   DollarSign,
-  Lock,
-  Search,
   Network,
   Users,
-  Layers,
   Clock,
   TrendingUp,
-  Download,
-  Upload,
-  Shield
 } from 'lucide-react';
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, AreaChart, Area } from 'recharts';
 import { useToast } from "@/hooks/use-toast";
@@ -86,70 +77,6 @@ const criticalAlerts = [
   }
 ];
 
-// Mock data for server nodes
-const serverNodes = [
-  {
-    id: 'web-server-1',
-    location: 'US East (Virginia)',
-    status: 'healthy',
-    cpu: 42,
-    memory: 63,
-    connections: 456,
-    uptime: '14d 7h',
-    load: 3.24
-  },
-  {
-    id: 'web-server-2',
-    location: 'US East (Virginia)',
-    status: 'healthy',
-    cpu: 38,
-    memory: 57,
-    connections: 389,
-    uptime: '14d 7h',
-    load: 2.87
-  },
-  {
-    id: 'web-server-3',
-    location: 'US West (Oregon)',
-    status: 'warning',
-    cpu: 78,
-    memory: 92,
-    connections: 712,
-    uptime: '7d 22h',
-    load: 6.51
-  },
-  {
-    id: 'web-server-4',
-    location: 'EU West (Ireland)',
-    status: 'healthy',
-    cpu: 45,
-    memory: 60,
-    connections: 523,
-    uptime: '21d 3h',
-    load: 3.45
-  },
-  {
-    id: 'web-server-5',
-    location: 'EU West (Ireland)',
-    status: 'maintenance',
-    cpu: 12,
-    memory: 34,
-    connections: 122,
-    uptime: '2h 15m',
-    load: 0.87
-  },
-  {
-    id: 'web-server-6',
-    location: 'Asia Pacific (Tokyo)',
-    status: 'healthy',
-    cpu: 51,
-    memory: 64,
-    connections: 341,
-    uptime: '9d 11h',
-    load: 4.12
-  }
-];
-
 // Mock data for tenant resource usage
 const tenantUsageData = [
   { name: 'Tenant A', servers: 12, cpu: 18, memory: 24, storage: 156, cost: 2345 },
@@ -180,25 +107,6 @@ const generateResourceHistory = () => {
   
   return data;
 };
-
-// Mock data for bandwidth by region
-const bandwidthByRegion = [
-  { region: 'North America', inbound: 42.5, outbound: 68.3 },
-  { region: 'Europe', inbound: 36.2, outbound: 54.7 },
-  { region: 'Asia Pacific', inbound: 28.4, outbound: 47.2 },
-  { region: 'South America', inbound: 12.6, outbound: 18.9 },
-  { region: 'Africa', inbound: 5.8, outbound: 9.2 },
-  { region: 'Middle East', inbound: 8.7, outbound: 14.1 }
-];
-
-// Mock data for request distribution
-const requestDistribution = [
-  { name: 'HTTP GET', value: 68 },
-  { name: 'HTTP POST', value: 17 },
-  { name: 'HTTP PUT', value: 8 },
-  { name: 'HTTP DELETE', value: 4 },
-  { name: 'HTTP OPTIONS', value: 3 }
-];
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8'];
 
@@ -373,91 +281,6 @@ export const EngineeringDashboard = () => {
               </CardContent>
             </Card>
 
-            {/* Global Server Distribution */}
-            {/* <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <Card className="lg:col-span-2">
-                <CardHeader>
-                  <CardTitle>Server Distribution</CardTitle>
-                  <CardDescription>Global distribution of web servers by region</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="h-80 bg-gray-50 rounded-md flex items-center justify-center">
-                    <div className="text-center">
-                      <Globe className="h-10 w-10 text-muted-foreground mx-auto mb-2" />
-                      <p className="text-sm text-muted-foreground">Geographic distribution map</p>
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-4">
-                    <div className="flex flex-col">
-                      <span className="text-sm font-medium">US East</span>
-                      <div className="flex items-center">
-                        <div className="h-2 bg-blue-500 rounded-full w-24"></div>
-                        <span className="ml-2 text-sm">8 servers</span>
-                      </div>
-                    </div>
-                    <div className="flex flex-col">
-                      <span className="text-sm font-medium">US West</span>
-                      <div className="flex items-center">
-                        <div className="h-2 bg-blue-500 rounded-full w-16"></div>
-                        <span className="ml-2 text-sm">5 servers</span>
-                      </div>
-                    </div>
-                    <div className="flex flex-col">
-                      <span className="text-sm font-medium">EU West</span>
-                      <div className="flex items-center">
-                        <div className="h-2 bg-blue-500 rounded-full w-20"></div>
-                        <span className="ml-2 text-sm">6 servers</span>
-                      </div>
-                    </div>
-                    <div className="flex flex-col">
-                      <span className="text-sm font-medium">EU Central</span>
-                      <div className="flex items-center">
-                        <div className="h-2 bg-blue-500 rounded-full w-12"></div>
-                        <span className="ml-2 text-sm">4 servers</span>
-                      </div>
-                    </div>
-                    <div className="flex flex-col">
-                      <span className="text-sm font-medium">Asia Pacific</span>
-                      <div className="flex items-center">
-                        <div className="h-2 bg-blue-500 rounded-full w-10"></div>
-                        <span className="ml-2 text-sm">3 servers</span>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Request Methods</CardTitle>
-                  <CardDescription>Distribution by HTTP method</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="h-80">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
-                        <Pie
-                          data={requestDistribution}
-                          cx="50%"
-                          cy="50%"
-                          labelLine={false}
-                          outerRadius={80}
-                          fill="#8884d8"
-                          dataKey="value"
-                          label={({name, percent}) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                        >
-                          {requestDistribution.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                          ))}
-                        </Pie>
-                        <Tooltip formatter={(value) => `${value}%`} />
-                        <Legend />
-                      </PieChart>
-                    </ResponsiveContainer>
-                  </div>
-                </CardContent>
-              </Card>
-            </div> */}
 
             {/* Critical Alerts */}
             <Card>
@@ -667,234 +490,7 @@ export const EngineeringDashboard = () => {
               </CardContent>
             </Card>
 
-            {/* Server Nodes Table */}
-            {/* <Card>
-              <CardHeader>
-                <CardTitle>Web Server Nodes</CardTitle>
-                <CardDescription>Status and metrics of all server instances</CardDescription>
-                <div className="flex gap-4 mt-4">
-                  <Input placeholder="Search servers..." className="max-w-sm" />
-                  <Select defaultValue="all-regions">
-                    <SelectTrigger className="w-40">
-                      <SelectValue placeholder="Region" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all-regions">All Regions</SelectItem>
-                      <SelectItem value="us-east">US East</SelectItem>
-                      <SelectItem value="us-west">US West</SelectItem>
-                      <SelectItem value="eu-west">EU West</SelectItem>
-                      <SelectItem value="ap-north">Asia Pacific</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <Select defaultValue="all-status">
-                    <SelectTrigger className="w-40">
-                      <SelectValue placeholder="Status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all-status">All Status</SelectItem>
-                      <SelectItem value="healthy">Healthy</SelectItem>
-                      <SelectItem value="warning">Warning</SelectItem>
-                      <SelectItem value="critical">Critical</SelectItem>
-                      <SelectItem value="maintenance">Maintenance</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Server ID</TableHead>
-                      <TableHead>Location</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>CPU</TableHead>
-                      <TableHead>Memory</TableHead>
-                      <TableHead>Connections</TableHead>
-                      <TableHead>Load</TableHead>
-                      <TableHead>Uptime</TableHead>
-                      <TableHead>Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {serverNodes.map((node) => (
-                      <TableRow key={node.id}>
-                        <TableCell className="font-medium">{node.id}</TableCell>
-                        <TableCell>{node.location}</TableCell>
-                        <TableCell>
-                          <Badge variant={
-                            node.status === 'healthy' ? 'default' :
-                            node.status === 'warning' ? 'warning' :
-                            node.status === 'critical' ? 'destructive' :
-                            'secondary'
-                          }>
-                            {node.status.charAt(0).toUpperCase() + node.status.slice(1)}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <div className="w-full bg-gray-200 rounded-full h-2">
-                              <div 
-                                className={`h-2 rounded-full ${
-                                  node.cpu > 80 ? 'bg-red-500' : 
-                                  node.cpu > 60 ? 'bg-yellow-500' : 'bg-green-500'
-                                }`}
-                                style={{ width: `${node.cpu}%` }}
-                              ></div>
-                            </div>
-                            <span className="text-xs">{node.cpu}%</span>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <div className="w-full bg-gray-200 rounded-full h-2">
-                              <div 
-                                className={`h-2 rounded-full ${
-                                  node.memory > 80 ? 'bg-red-500' : 
-                                  node.memory > 60 ? 'bg-yellow-500' : 'bg-green-500'
-                                }`}
-                                style={{ width: `${node.memory}%` }}
-                              ></div>
-                            </div>
-                            <span className="text-xs">{node.memory}%</span>
-                          </div>
-                        </TableCell>
-                        <TableCell>{node.connections}</TableCell>
-                        <TableCell>{node.load}</TableCell>
-                        <TableCell>{node.uptime}</TableCell>
-                        <TableCell>
-                          <div className="flex gap-2">
-                            <Button variant="ghost" size="icon">
-                              <Zap className="h-4 w-4" />
-                            </Button>
-                            <Button variant="ghost" size="icon">
-                              <RefreshCw className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card> */}
 
-            {/* Bandwidth Usage by Region */}
-            {/* <Card>
-              <CardHeader>
-                <CardTitle>Bandwidth Usage by Region</CardTitle>
-                <CardDescription>Data transfer by geographic region</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="h-80">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={bandwidthByRegion}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="region" />
-                      <YAxis label={{ value: 'Data Transfer (TB)', angle: -90, position: 'insideLeft' }} />
-                      <Tooltip />
-                      <Legend />
-                      <Bar dataKey="inbound" name="Inbound Traffic" fill="#3b82f6" />
-                      <Bar dataKey="outbound" name="Outbound Traffic" fill="#ef4444" />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              </CardContent>
-            </Card> */}
-
-            {/* Security Metrics */}
-            {/* <Card>
-              <CardHeader>
-                <CardTitle>Security Metrics</CardTitle>
-                <CardDescription>Web server security statistics</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-medium">SSL Certificate Status</h3>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="bg-green-50 p-4 rounded-lg">
-                        <div className="flex items-center gap-2 mb-2">
-                          <Lock className="h-5 w-5 text-green-600" />
-                          <span className="font-medium text-green-700">Valid</span>
-                        </div>
-                        <p className="text-3xl font-bold text-green-700">94%</p>
-                        <p className="text-sm text-green-600">124 certificates</p>
-                      </div>
-                      <div className="bg-amber-50 p-4 rounded-lg">
-                        <div className="flex items-center gap-2 mb-2">
-                          <AlertCircle className="h-5 w-5 text-amber-600" />
-                          <span className="font-medium text-amber-700">Expiring Soon</span>
-                        </div>
-                        <p className="text-3xl font-bold text-amber-700">6%</p>
-                        <p className="text-sm text-amber-600">8 certificates</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-medium">Traffic Type</h3>
-                    <div className="h-48">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <PieChart>
-                          <Pie
-                            data={[
-                              { name: 'HTTPS', value: 92 },
-                              { name: 'HTTP', value: 8 }
-                            ]}
-                            cx="50%"
-                            cy="50%"
-                            innerRadius={40}
-                            outerRadius={80}
-                            fill="#8884d8"
-                            paddingAngle={5}
-                            dataKey="value"
-                            label={({name, percent}) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                          >
-                            <Cell fill="#16a34a" />
-                            <Cell fill="#f97316" />
-                          </Pie>
-                          <Tooltip />
-                        </PieChart>
-                      </ResponsiveContainer>
-                    </div>
-                  </div>
-
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-medium">Security Events (24h)</h3>
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <Shield className="h-4 w-4 text-red-500" />
-                          <span className="text-sm">Blocked Attacks</span>
-                        </div>
-                        <Badge variant="outline">1,248</Badge>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <Shield className="h-4 w-4 text-amber-500" />
-                          <span className="text-sm">WAF Triggers</span>
-                        </div>
-                        <Badge variant="outline">683</Badge>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <Shield className="h-4 w-4 text-blue-500" />
-                          <span className="text-sm">Rate Limiting</span>
-                        </div>
-                        <Badge variant="outline">416</Badge>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <Shield className="h-4 w-4 text-purple-500" />
-                          <span className="text-sm">Bot Traffic</span>
-                        </div>
-                        <Badge variant="outline">3,842</Badge>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card> */}
           </TabsContent>
 
           {/* TENANTS TAB */}

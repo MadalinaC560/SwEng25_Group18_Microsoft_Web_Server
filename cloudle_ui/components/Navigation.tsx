@@ -4,7 +4,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Button } from "@/components/ui/button";
-import { UserCog, Users, LogOut, Info } from 'lucide-react';
+import { UserCog, Users, LogOut } from 'lucide-react';
 
 interface NavigationProps {
   isAdmin: boolean;

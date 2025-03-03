@@ -718,7 +718,7 @@ export const ApplicationDetails: React.FC<ApplicationDetailsProps> = ({ appId, o
             <span>{appData.sslStatus === 'Active' ? 'Valid and active' : 'Pending'}</span>
             
             <span className="text-muted-foreground">Issuer:</span>
-            <span>Let's Encrypt</span>
+            <span>Letn us Encrypt</span>
             
             <span className="text-muted-foreground">Expires in:</span>
             <span>72 days</span>
@@ -1074,7 +1074,7 @@ export const ApplicationDetails: React.FC<ApplicationDetailsProps> = ({ appId, o
               </div>
               <div className="group">
                 <div className="text-xs text-red-600 truncate">
-                  Uncaught TypeError: Cannot read property 'id' of undefined
+                  Uncaught TypeError: Cannot read property id of undefined
                 </div>
                 <div className="flex justify-between text-xs text-muted-foreground">
                   <span>18 occurrences</span>

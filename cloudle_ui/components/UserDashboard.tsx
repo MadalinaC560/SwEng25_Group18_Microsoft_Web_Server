@@ -354,7 +354,7 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({ onAppClick }) => {
                 <div className="flex-none w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-blue-600">1</div>
                 <div>
                   <h3 className="font-medium">Prepare your application</h3>
-                  <p className="text-sm text-gray-500">Create your application files (HTML, Python, etc.) and ensure they're working locally.</p>
+                  <p className="text-sm text-gray-500">Create your application files (HTML, Python, etc.) and ensure they are working locally.</p>
                 </div>
               </div>
               <div className="flex items-start gap-4">
@@ -368,7 +368,7 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({ onAppClick }) => {
                 <div className="flex-none w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-blue-600">3</div>
                 <div>
                   <h3 className="font-medium">Configure runtime</h3>
-                  <p className="text-sm text-gray-500">Select your application's runtime environment and version.</p>
+                  <p className="text-sm text-gray-500">Select your applications runtime environment and version.</p>
                 </div>
               </div>
               <div className="flex items-start gap-4">
