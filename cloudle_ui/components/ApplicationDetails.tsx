@@ -100,7 +100,8 @@ export const ApplicationDetails: React.FC<ApplicationDetailsProps> = ({ appId, o
         title: "Status Updated",
         description: `Application ${newStatus === 'running' ? 'started' : 'stopped'} successfully.`,
       });
-    } catch (_error) {
+    } catch (error) {
+      console.error('An error occurred:', error)
       toast({
         title: "Error",
         description: "Failed to update application status. Please try again.",
@@ -119,7 +120,8 @@ export const ApplicationDetails: React.FC<ApplicationDetailsProps> = ({ appId, o
         title: "Deployment Successful",
         description: "New version deployed successfully.",
       });
-    } catch (_error) {
+    } catch (error) {
+      console.error('An error occurred:', error)
       toast({
         title: "Error",
         description: "Failed to deploy new version. Please try again.",
