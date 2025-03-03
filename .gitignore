@@ -18,3 +18,5 @@ webserver.log
 .venv
 *.venv
 /venv
+# Ignore placeholder web server uploads
+placeholder_web_server/uploads
