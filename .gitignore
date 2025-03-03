@@ -7,5 +7,16 @@ build
 # Ignore IntelliJ files
 .idea
 
+webserver.log
+
+.metadata
+
+.DS_Store
+
+/node_modules
+
+.venv
+*.venv
+/venv
 # Ignore placeholder web server uploads
 placeholder_web_server/uploads
