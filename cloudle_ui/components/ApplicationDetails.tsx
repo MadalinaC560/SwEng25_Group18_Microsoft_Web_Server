@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -25,7 +25,6 @@ import {
 import {
     ArrowLeft,
     Activity,
-    Terminal,
     Power,
     Globe,
     Database,
@@ -39,11 +38,9 @@ import {
     RefreshCw,
     ChevronLeft,
     ChevronRight,
-    AlertTriangle,
-    Info
 
   } from 'lucide-react';
-  import { LineChart, Line, BarChart, Bar, PieChart, Pie, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Label as RechartsLabel } from 'recharts';
+  import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer} from 'recharts';
 
 import { api } from '@/components/api';
 import { useRealTimeMetrics } from '@/hooks/useRealTimeMetrics';
@@ -103,7 +100,7 @@ export const ApplicationDetails: React.FC<ApplicationDetailsProps> = ({ appId, o
         title: "Status Updated",
         description: `Application ${newStatus === 'running' ? 'started' : 'stopped'} successfully.`,
       });
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: "Error",
         description: "Failed to update application status. Please try again.",
@@ -122,7 +119,7 @@ export const ApplicationDetails: React.FC<ApplicationDetailsProps> = ({ appId, o
         title: "Deployment Successful",
         description: "New version deployed successfully.",
       });
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: "Error",
         description: "Failed to deploy new version. Please try again.",
