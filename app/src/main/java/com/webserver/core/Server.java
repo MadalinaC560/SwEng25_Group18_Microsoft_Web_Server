@@ -5,8 +5,9 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import com.webserver.util.Logger;
+
 import com.webserver.util.ConfigLoader;
+import com.webserver.util.Logger;
 
 public class Server {
     private final ServerSocket serverSocket;
