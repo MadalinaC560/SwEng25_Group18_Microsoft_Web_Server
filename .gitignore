@@ -12,3 +12,8 @@ webserver.log
 .metadata
 
 .DS_Store
+
+./node_modules
+
+/node_modules
+

@@ -27,12 +27,6 @@ public class HttpParser {
     }
 
     public HttpRequest parse(InputStream input) throws IOException {
-        // TODO: Implement HTTP request parsing
-        // 1. Read the input stream and extract the request line (method, path, HTTP version)
-        // 2. Parse all headers until an empty line is encountered
-        // 3. If Content-Length header exists, read the body
-        // 4. Create and return an HttpRequest object with the parsed data
-        // 5. Handle malformed requests appropriately
         Optional<List<String>> requestLines = readMessage(input);
 
         if(requestLines.isEmpty()){
@@ -46,12 +40,6 @@ public class HttpParser {
     }
 
     private Optional<List<String>> readMessage(InputStream inputStream) {
-        // TODO: Implement raw HTTP message reading
-        // 1. Read the input stream line by line until an empty line
-        // 2. Handle Content-Length header if present
-        // 3. Read the message body if required
-        // 4. Return all lines including headers and body
-
         List<String> lines = new ArrayList<>();
         try {
             BufferedReader br = new BufferedReader(new InputStreamReader(inputStream));
@@ -89,11 +77,6 @@ public class HttpParser {
     }
 
     private HttpRequest buildRequest(List<String> requestLines, InputStream input) throws IOException {
-        // TODO: Implement request object construction
-        // 1. Parse the first line into method, path, and HTTP version
-        // 2. Extract and organize headers into a map
-        // 3. Handle the body if present
-        // 4. Create and return HttpRequest object
         try {
             String[] firstLine = requestLines.get(0).split(" "); //splits into METHOD, PATH, and http VERSION
             System.out.println("First Line: " + requestLines.get(0));   //this is for debugging ===========================
@@ -102,7 +85,8 @@ public class HttpParser {
                 throw new IllegalArgumentException("Invalid first line");
             }
 
-            String method = firstLine[0].toUpperCase();
+//            String method = firstLine[0].toUpperCase();
+            HttpMethod method = HttpMethod.fromString(firstLine[0]);
             if (method == null) {
                 Logger.error("Unsupported HTTP method: " + firstLine[0], null);
                 throw new IllegalArgumentException("Unsupported HTTP method");
@@ -159,7 +143,7 @@ public class HttpParser {
             System.out.println("Headers: " + headersAndValues);
             System.out.println("Body: " + body);
 
-            return new HttpRequest(method, path, headersAndValues, body);
+            return new HttpRequest(method.toString(), path, headersAndValues, body);
 
         } catch (Exception e) {
             Logger.error("Error building HTTP request", e);
