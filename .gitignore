@@ -21,3 +21,8 @@ out/
 
 app/bin
 app/build
+
+.venv
+*.venv
+/venv
+
