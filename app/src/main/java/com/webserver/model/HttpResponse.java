@@ -1,13 +1,11 @@
 package com.webserver.model;
 
-import java.io.IOException;
+import com.webserver.http.ResponseBuilder;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import com.webserver.http.ResponseBuilder;
 
 public class HttpResponse {
     private final int statusCode;
@@ -27,7 +25,7 @@ public class HttpResponse {
     public Map<String, List<String>> getHeaders() { return headers; }
     public String getBody() { return body; }
 
-    public void write(OutputStream outputStream) throws IOException{
+    public void write(OutputStream outputStream) {
         ResponseBuilder.write(outputStream, this);
     }
 

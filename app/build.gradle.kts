@@ -8,15 +8,10 @@ plugins {
 
 dependencies {
     implementation("org.apache.commons:commons-text")
+    implementation(project(":utilities"))
 }
 
 application {
     // Define the main class for the application.
-    mainClass = "com.webserver.core.Server"
-}
-
-tasks.jar {
-    manifest {
-        attributes["Main-Class"] = application.mainClass.get()
-    }
+    mainClass = "org.example.app.App"
 }
