@@ -21,7 +21,7 @@ public class ConnectionHandler implements Runnable {
                 .setStatusCode(200)
                 .setStatusMessage("OK")
                 .addHeader("Content-Type", "text/plain")
-                .setBody("Hello from your web server!")
+                .setBody("Hello Group 18, Cloudle is Online!!")
                 .build());
     }
 

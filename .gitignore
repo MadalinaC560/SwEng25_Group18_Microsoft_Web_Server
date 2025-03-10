@@ -13,10 +13,16 @@ webserver.log
 
 .DS_Store
 
+./node_modules
+
 /node_modules
+
+out/
+
+app/bin
+app/build
 
 .venv
 *.venv
 /venv
-# Ignore placeholder web server uploads
-placeholder_web_server/uploads
+
