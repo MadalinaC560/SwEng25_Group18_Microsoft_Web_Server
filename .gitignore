@@ -18,3 +18,6 @@ webserver.log
 /node_modules
 
 out/
+
+app/bin
+app/build
