@@ -31,10 +31,14 @@ public class ConnectionHandler implements Runnable {
     }
 
     public void handle() {
+        long startTime = System.currentTimeMillis();
         try {
             HttpRequest request = parser.parse(clientSocket.getInputStream());
             HttpResponse response = processor.process(request);
             response.write(clientSocket.getOutputStream());
+
+            Logger.trackResponseTime(startTime);
+
             clientSocket.close();
         } catch (Exception e) {
             Logger.error("Error handling connection", e);

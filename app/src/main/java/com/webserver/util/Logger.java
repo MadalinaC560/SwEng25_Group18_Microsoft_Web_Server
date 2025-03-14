@@ -21,6 +21,18 @@ public class Logger {
         client = new TelemetryClient(configuration);
     }
 
+    //tracks the response time and sends to azure insights
+    public static void trackResponseTime(long startingTime){
+        long duration = System.currentTimeMillis() - startingTime;
+        try {
+            client.trackMetric("ResponseTime", duration);
+            client.flush();
+            
+        } catch (Exception e) {
+            System.err.println("There was an error when tracking response time." + e.getMessage());
+        }
+    }
+
     private static void log(String level, String message, Throwable t) {
         String timestamp = LocalDateTime.now().format(formatter);
         String logMessage = String.format("[%s] [%s] %s", timestamp, level, message);
@@ -43,8 +55,10 @@ public class Logger {
 
         //Send details to the application insights
         try {
+            //traces the logs
             client.trackTrace(logMessage, SeverityLevel.valueOf(level.toUpperCase()));
-            client.flush();
+
+
         } catch (Exception e) {
             System.err.println("There was an error when sending the telemetry data" + e.getMessage());
         }
