@@ -1,14 +1,25 @@
 package com.webserver.util;
 
+import com.microsoft.applicationinsights.TelemetryClient;
+import com.microsoft.applicationinsights.TelemetryConfiguration;
+import com.microsoft.applicationinsights.telemetry.SeverityLevel;
+
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.PrintWriter;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.io.FileWriter;
-import java.io.PrintWriter;
-import java.io.IOException;
 
 public class Logger {
     private static final String LOG_FILE = "webserver.log";
     private static final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+    private static final TelemetryClient client;
+
+    static{
+        TelemetryConfiguration configuration = TelemetryConfiguration.createDefault();
+        configuration.setInstrumentationKey("InstrumentationKey=3dd12fd3-2f83-4010-8185-96acd9ef245a;IngestionEndpoint=https://westeurope-5.in.applicationinsights.azure.com/;LiveEndpoint=https://westeurope.livediagnostics.monitor.azure.com/;ApplicationId=df159bc7-e776-46b3-9f0c-3261fbc8a060");
+        client = new TelemetryClient(configuration);
+    }
 
     private static void log(String level, String message, Throwable t) {
         String timestamp = LocalDateTime.now().format(formatter);
@@ -28,6 +39,14 @@ public class Logger {
             }
         } catch (IOException e) {
             System.err.println("Failed to write to log file: " + e.getMessage());
+        }
+
+        //Send details to the application insights
+        try {
+            client.trackTrace(logMessage, SeverityLevel.valueOf(level.toUpperCase()));
+            client.flush();
+        } catch (Exception e) {
+            System.err.println("There was an error when sending the telemetry data" + e.getMessage());
         }
     }
 

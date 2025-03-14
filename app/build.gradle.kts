@@ -12,28 +12,12 @@ dependencies {
 
     //Azure dependencies
 
-    //core azure implementation
-    implementation platform('com.azure:azure-sdk-bom:{bom_version_to_target}')
-    
-    //authenticates app to access azure resources
-    implementation("com.azure:azure-identity:1.10.4") 
-    
-    //for file uploads
-    implementation("com.azure:azure-storage-blob:12.21.2")
-
-    //SQL database for storing and managing user data
-    implementation("mysql:mysql-connector-java:8.0.33")
-    implementation("org.springframework.boot:spring-boot-starter-data-jpa")
-        
-    //for logs in azure portal
+    //SDK for application Insights
     implementation("com.microsoft.azure:applicationinsights-core:2.6.4")
-
-    //store config settings within Azure
-    implementation("com.azure.spring:azure-spring-boot-starter-appconfiguration:4.8.0")
-
+    implementation("com.azure:azure-core:1.40.0")
 }
 
 application {
     // Define the main class for the application.
-    mainClass = "org.example.app.App"
+    mainClass.set("com.webserver.core.Server")
 }
