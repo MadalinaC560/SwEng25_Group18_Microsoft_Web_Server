@@ -58,12 +58,16 @@ public class Logger {
             //traces the logs
             client.trackTrace(logMessage, SeverityLevel.valueOf(level.toUpperCase()));
 
+            long totalMemoryUsed = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
 
+            client.trackMetric("MemoryUsed", totalMemoryUsed);
+
+            client.flush();
         } catch (Exception e) {
             System.err.println("There was an error when sending the telemetry data" + e.getMessage());
         }
     }
-
+    
     public static void info(String message) {
         log("INFO", message, null);
     }
