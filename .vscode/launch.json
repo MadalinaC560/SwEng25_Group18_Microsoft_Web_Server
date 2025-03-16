@@ -1,0 +1,19 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "java",
+            "request": "launch",
+            "name": "Debug RequestProcessorTest",
+            "mainClass": "com.webserver.http.RequestProcessorTest",
+            "projectName": "sweng25_group18_microsoft_web_server-3"
+        },
+        {
+            "type": "java",
+            "request": "attach",
+            "name": "Attach to Terminal Debugger",
+            "hostName": "localhost",
+            "port": 5005
+        }
+    ]
+}

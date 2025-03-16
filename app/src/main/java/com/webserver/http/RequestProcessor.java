@@ -1,22 +1,29 @@
 package com.webserver.http;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import com.webserver.model.HttpRequest;
 import com.webserver.model.HttpResponse;
+import com.webserver.util.FileService;
+import com.webserver.util.MimeTypes;
+
 
 public class RequestProcessor {
     private final Map<String, RouteHandler> routes;
+    private final FileService fileService; // Add file service for static files
 
-    public RequestProcessor() {
+    public RequestProcessor(FileService fileService) {
         this.routes = new HashMap<>();
-        // TODO: Implement default route handling
+        this.fileService = fileService; // store the file service instance
+
+        
         // 1. Add a default route for "/"
         routes.put("/", request -> new HttpResponse.Builder()
             .setStatusCode(200)
-            .setBody("Welcome to the home page!")
+            .setBody("Valid route")
             .build());
         // 2. Add routes for common HTTP errors (404, 500)
         routes.put("/404", request -> new HttpResponse.Builder()
@@ -46,33 +53,72 @@ public class RequestProcessor {
         routes.put(path, handler);
     }
 
+
+
     public HttpResponse process(HttpRequest request) {
-        // TODO: Implement request processing
-        // 1. Validate the incoming request
-        if(!isValidRequest(request))
-        {
+        // ✅ Validate Request Early
+        if (!isValidRequest(request)) {
             return new HttpResponse.Builder()
                 .setStatusCode(400)
                 .setBody("Bad Request")
                 .build();
         }
-        // 2. Find matching route handler
+    
+// ✅ Prevent Directory Traversal Attacks (BAD request)
+if (!fileService.isValidPath(request.getPath())) {
+    return new HttpResponse.Builder()
+        .setStatusCode(400)
+        .setBody("Bad Request") // Optional: Add more clarity
+        .build();
+}
+
+// ✅ Handle Static Files (CHECK IF FILE EXISTS)
+if (fileService.fileExists(request.getPath())) { // ✅ New method to check existence
+    try {
+        byte[] fileContent = fileService.readFile(request.getPath());
+
+        String fileName = fileService.getFileName(request.getPath()); // Get file name
+        String mimeType = MimeTypes.getMimeType(fileName); // Determine MIME type
+
+        return new HttpResponse.Builder()
+            .setStatusCode(200)
+            .addHeader("Content-Type", mimeType)
+            .setBody(new String(fileContent))
+            .build();
+    } catch (IOException e) {
+        return new HttpResponse.Builder()
+            .setStatusCode(404) // ✅ Correctly return 404 if file doesn't exist
+            .setBody("Error 404: Not Found")
+            .build();
+    }
+}
+
+        
+    
+        // ✅ Handle API Routes
         RouteHandler handler = routes.getOrDefault(request.getPath(), routes.get("/404"));
-        // 3. Execute the handler or return appropriate error response
-        // 4. Handle any exceptions during processing
-        try
-        {
-            return handler.handle(request);
+    
+        if (handler == null) {
+            return new HttpResponse.Builder()
+                .setStatusCode(404)
+                .setBody("Error 404: Not Found")
+                .build();
         }
-        catch(Exception e)
-        {
+    
+        try {
+            return handler.handle(request);
+        } catch (Exception e) {
             return new HttpResponse.Builder()
                 .setStatusCode(500)
                 .setBody("Internal Server Error: " + e.getMessage())
                 .build();
         }
-     
     }
+    
+    
+  
+    
+    
 
     private boolean isValidRequest(HttpRequest request) {
         // TODO: Implement request validation
@@ -93,17 +139,19 @@ public class RequestProcessor {
             return false;
         }
         // 4. Check required headers for specific methods (e.g., Content-Length for POST)
-        if((method.equals("POST") && method.equals("PUT")) && !hasContentLengthHeader(request))
+        if((method.equals("POST") || method.equals("PUT")) && !hasContentLengthHeader(request))
         {
             return false;
         }
         return true;
     }
 
-    private boolean hasContentLengthHeader(HttpRequest request)
-    {
+
+
+
+    private boolean hasContentLengthHeader(HttpRequest request) {
         Map<String, List<String>> headers = request.getHeaders();
-        return headers.containsKey("Content Length") && !headers.get("Content Length").isEmpty();
+        return headers.containsKey("Content-Length") && !headers.get("Content-Length").isEmpty();
     }
 
     public interface RouteHandler {
