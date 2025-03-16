@@ -19,5 +19,11 @@ dependencies {
 
 application {
     // Define the main class for the application.
-    mainClass.set("com.webserver.core.Server")
+    mainClass = "com.webserver.core.Server"
+}
+
+tasks.jar {
+    manifest {
+        attributes["Main-Class"] = application.mainClass.get()
+    }
 }

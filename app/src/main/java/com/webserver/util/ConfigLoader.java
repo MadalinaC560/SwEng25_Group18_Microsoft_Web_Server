@@ -16,7 +16,7 @@ public class ConfigLoader {
 
     private void loadDefaults() {
         // Set default values
-        properties.setProperty("port", "8080");
+        properties.setProperty("port", "80");
         properties.setProperty("webroot", "./webroot");
         properties.setProperty("max_threads", "10");
         properties.setProperty("connection_timeout", "30000");
