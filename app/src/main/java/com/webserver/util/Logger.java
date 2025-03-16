@@ -1,14 +1,18 @@
 package com.webserver.util;
 
-import com.microsoft.applicationinsights.TelemetryClient;
-import com.microsoft.applicationinsights.TelemetryConfiguration;
-import com.microsoft.applicationinsights.telemetry.SeverityLevel;
-
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Properties;
+
+import com.microsoft.applicationinsights.TelemetryClient;
+import com.microsoft.applicationinsights.TelemetryConfiguration;
+import com.microsoft.applicationinsights.telemetry.SeverityLevel;
 
 public class Logger {
     private static final String LOG_FILE = "webserver.log";
@@ -67,6 +71,29 @@ public class Logger {
             System.err.println("There was an error when sending the telemetry data" + e.getMessage());
         }
     }
+
+    //this is for the actual users, assuming we are taking user ID's and served files as input and plotted to hashmap.
+    public static void trackFileMetrics(String fileName) {
+        try {
+
+            //Hashmap to filter metrics by filename (add more to hashmap to differentiate user files)
+            Map<String, String> user  = new HashMap<>();
+            user.put("fileName", fileName);
+
+            // Track the file accesses
+            client.trackEvent("accessedFile", user, null);
+
+            // Track the memory usage for the specific file
+            long totalMemoryUsage =  Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
+            client.trackMetric("userMemoryUsage", totalMemoryUsage, 1, totalMemoryUsage, totalMemoryUsage, user);
+            
+            //MORE TO BE ADDED
+            client.flush();
+
+        } catch (Exception e) {
+            System.err.println("Failed to get telemetry data: " + e.getMessage());
+    }
+}
     
     public static void info(String message) {
         log("INFO", message, null);
