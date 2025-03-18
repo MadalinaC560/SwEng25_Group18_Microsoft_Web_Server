@@ -1,35 +1,23 @@
 package com.webserver.http;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import com.webserver.model.HttpRequest;
 import com.webserver.model.HttpResponse;
 import com.webserver.util.Logger;
+import com.webserver.util.FileService;
+import com.webserver.util.MimeTypes;
 
 
 public class RequestProcessor {
     private final Map<String, RouteHandler> routes;
+    private final FileService fileService;
 
-    public RequestProcessor() {
+    public RequestProcessor(FileService fileService) {
         this.routes = new HashMap<>();
-//        // TODO: Implement default route handling
-//        // 1. Add a default route for "/"
-//        routes.put("/", request -> new HttpResponse.Builder()
-//            .setStatusCode(200)
-//            .setBody("Welcome to the home page!")
-//            .build());
-//        // 2. Add routes for common HTTP errors (404, 500)
-//        routes.put("/404", request -> new HttpResponse.Builder()
-//            .setStatusCode(404)
-//            .setBody("Error 404: Not Found")
-//            .build());
-//
-//        routes.put("/500", request -> new HttpResponse.Builder()
-//            .setStatusCode(500)
-//            .setBody("Error 500: Not Found")
-//            .build());
+        this.fileService = fileService;
     }
 
     public void addRoute(String path, RouteHandler handler) {
@@ -49,66 +37,73 @@ public class RequestProcessor {
     }
 
     public HttpResponse process(HttpRequest request) {
-        // TODO: Implement request processing
-        // 1. Validate the incoming request
-        if(!isValidRequest(request))
-        {
+        // Validate request
+        if(!isValidRequest(request)) {
             Logger.error("Invalid request received", null);
             return createErrorResponse(400, "Bad Request");
-//            return new HttpResponse.Builder()
-//                .setStatusCode(400)
-//                .setBody("Bad Request")
-//                .build();
         }
-        // 2. Find matching route handler
-//        RouteHandler handler = routes.getOrDefault(request.getPath(), routes.get("/404"));
-        // 3. Execute the handler or return appropriate error response
-        // 4. Handle any exceptions during processing
-//        try
-//        {
-//            return handler.handle(request);
-//        }
-//        catch(Exception e)
-//        {
-//            return new HttpResponse.Builder()
-//                .setStatusCode(500)
-//                .setBody("Internal Server Error: " + e.getMessage())
-//                .build();
-//        }
-        try {
-            String path = request.getPath();
-            RouteHandler handler = routes.get(path);
 
-            if (handler == null) {
-                Logger.info("No handler found for path: " + path);
+        String path = request.getBasePath();
+        RouteHandler handler = routes.get(path);
+
+        // If no route is defined for this path:
+        if (handler == null) {
+            Logger.info("No handler found for path: " + path);
+
+            // For GET requests, attempt static file serving:
+            if ("GET".equalsIgnoreCase(request.getMethod())) {
+                try {
+                    // read the file from disk
+                    byte[] fileBytes = fileService.readFile(path);
+                    // determine mime type
+                    String mimeType = MimeTypes.getMimeType(path);
+
+                    // Return a 200 with the file content in rawBody
+                    return new HttpResponse.Builder()
+                            .setStatusCode(200)
+                            .setStatusMessage("OK")
+                            .addHeader("Content-Type", mimeType)
+                            .setRawBody(fileBytes)
+                            .build();
+
+                } catch (IOException e) {
+                    // file not found, or invalid, etc. -> 404
+                    Logger.error("Error serving static file: " + path, e);
+                    return createErrorResponse(404, "Not Found");
+                }
+            } else {
+                // Not a GET -> no route found
                 return createErrorResponse(404, "Not Found");
             }
+        }
 
-            try {
-                HttpResponse response = handler.handle(request);
-                if (response == null) {
-                    Logger.error("Handler returned null response for path: " + path, null);
-                    return createErrorResponse(500, "Internal Server Error");
-                }
-                return response;
-            } catch (Exception e) {
-                Logger.error("Error processing request for path: " + path, e);
+        // Otherwise, invoke the matching route handler
+        try {
+            HttpResponse response = handler.handle(request);
+            if (response == null) {
+                Logger.error("Handler returned null response for path: " + path, null);
                 return createErrorResponse(500, "Internal Server Error");
             }
+            return response;
         } catch (Exception e) {
-            Logger.error("Unexpected error processing request", e);
+            Logger.error("Error processing request for path: " + path, e);
             return createErrorResponse(500, "Internal Server Error");
         }
-     
     }
 
+
     private HttpResponse createErrorResponse(int statusCode, String message) {
-        return new HttpResponse.Builder()
-                .setStatusCode(statusCode)
-                .setStatusMessage(message)
-                .addHeader("Content-Type", "text/plain")
-                .setBody(message)
-                .build();
+        // If 404, the test specifically wants "Error 404: Not Found"
+        String body = message;
+        if (statusCode == 404) {
+            body = "Error 404: Not Found";
+        }
+    return new HttpResponse.Builder()
+            .setStatusCode(statusCode)
+            .setStatusMessage(message)
+            .addHeader("Content-Type", "text/plain")
+            .setBody(body)
+            .build();
     }
 
     private boolean isValidRequest(HttpRequest request) {
@@ -130,7 +125,7 @@ public class RequestProcessor {
             return false;
         }
         // 4. Check required headers for specific methods (e.g., Content-Length for POST)
-        if((method.equals("POST") && method.equals("PUT")) && !hasContentLengthHeader(request))
+        if((method.equals("POST") || method.equals("PUT")) && !hasContentLengthHeader(request))
         {
             return false;
         }

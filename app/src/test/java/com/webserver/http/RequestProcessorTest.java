@@ -5,6 +5,8 @@ import java.util.Map;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import com.webserver.util.FileService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -17,7 +19,16 @@ class RequestProcessorTest {
 
     @BeforeEach
     void setUp() {
-        processor = new RequestProcessor();
+        FileService fileService = new FileService("./webroot");
+        processor = new RequestProcessor(fileService);
+        //  the default "/" route just as is in ConnectionHandler
+        processor.addRoute("/", request -> new HttpResponse.Builder()
+                .setStatusCode(200)
+                .setStatusMessage("OK")
+                .addHeader("Content-Type", "text/plain")
+                .setBody("Hello Group 18, Cloudle is Online!!")
+                .build()
+        );
     }
 
     @Test
@@ -26,7 +37,7 @@ class RequestProcessorTest {
         HttpResponse response = processor.process(request);
 
         assertEquals(200, response.getStatusCode());
-        assertEquals("Welcome to the home page!", response.getBody());
+        assertEquals("Hello Group 18, Cloudle is Online!!", response.getBody());
     }
 
     @Test
@@ -92,3 +103,4 @@ class RequestProcessorTest {
         assertEquals(400, processor.process(postWithoutContentLength).getStatusCode());
     }
 }
+

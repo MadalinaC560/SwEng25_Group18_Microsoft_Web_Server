@@ -17,3 +17,6 @@ webserver.log
 
 /node_modules
 
+.vscode/
+
+out/
