@@ -8,6 +8,13 @@ plugins {
 
 dependencies {
     implementation("org.apache.commons:commons-text")
+    implementation(project(":utilities"))
+
+    //Azure dependencies
+
+    //SDK for application Insights
+    implementation("com.microsoft.azure:applicationinsights-core:2.6.4")
+    implementation("com.azure:azure-core:1.40.0")
 }
 
 application {
