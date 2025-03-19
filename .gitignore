@@ -26,3 +26,5 @@ app/build
 *.venv
 /venv
 
+*.properties
+!gradle.properties

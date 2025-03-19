@@ -2,6 +2,9 @@ package com.webserver.util;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Properties;
+
+import java.io.IOException;
 
 import com.microsoft.applicationinsights.TelemetryClient;
 import com.microsoft.applicationinsights.TelemetryConfiguration;
@@ -12,11 +15,26 @@ public class Telemetry{
 
     static{
         TelemetryConfiguration configuration = TelemetryConfiguration.createDefault();
-        configuration.setInstrumentationKey("3dd12fd3-2f83-4010-8185-96acd9ef245a");
+        String key =  loadInstrumentationKey();
+        configuration.setInstrumentationKey(key);
         client = new TelemetryClient(configuration);
     }
 
-     //tracks the response time and sends to azure insights
+    public static String loadInstrumentationKey(){
+        String key = null;
+
+        try{
+            Properties props = new Properties();
+            props.load(Telemetry.class.getClassLoader().getResourceAsStream("config.properties"));
+            key = props.getProperty("APPINSIGHTS_INSTRUMENTATION_KEY");
+        }catch (IOException e){
+            System.err.println("There was an error when getting the key: " + e.getMessage());
+        }
+
+        return key;
+    }
+
+    //tracks the response time and sends to azure insights
     public static void trackResponseTime(long startingTime){
         long duration = System.currentTimeMillis() - startingTime;
         try {
