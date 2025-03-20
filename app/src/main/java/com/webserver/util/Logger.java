@@ -4,9 +4,6 @@ package com.webserver.util;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.io.FileWriter;
-import java.io.PrintWriter;
-import java.io.IOException;
 
 public class Logger {
     private static final String LOG_FILE = "webserver.log";
@@ -31,8 +28,16 @@ public class Logger {
         } catch (IOException e) {
             System.err.println("Failed to write to log file: " + e.getMessage());
         }
-    }
 
+        try {
+            Telemetry.trackLogMetric(level, logMessage);
+            
+        } catch (Exception e) {
+            System.out.println("Failed to send telemetry: " + e.getMessage());
+
+        }
+    }
+    
     public static void info(String message) {
         log("INFO", message, null);
     }

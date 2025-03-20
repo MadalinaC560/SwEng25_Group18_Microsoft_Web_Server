@@ -7,7 +7,7 @@ import com.webserver.model.HttpRequest;
 import com.webserver.model.HttpResponse;
 import com.webserver.util.ConfigLoader;
 import com.webserver.util.Logger;
-import com.webserver.util.FileService;
+import com.webserver.util.Telemetry;
 
 public class ConnectionHandler implements Runnable {
     private final Socket clientSocket;
@@ -48,8 +48,8 @@ public class ConnectionHandler implements Runnable {
             HttpResponse response = processor.process(request);
             response.write(clientSocket.getOutputStream());
 
-//            Logger.trackResponseTime(startTime);//for our use
-            //Logger.trackFileMetrics(fileName, startTime); //we will insert a valid file here.
+            Telemetry.trackResponseTime(startTime);//for our use
+            //Telemetry.trackFileMetrics(fileName, startTime); //we will insert a valid file here.
 
             clientSocket.close();
         } catch (Exception e) {

@@ -17,6 +17,14 @@ webserver.log
 
 /node_modules
 
-.vscode/
-
 out/
+
+app/bin
+app/build
+
+.venv
+*.venv
+/venv
+
+*.properties
+!gradle.properties
