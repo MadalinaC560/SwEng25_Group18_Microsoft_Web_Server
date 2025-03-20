@@ -5,6 +5,7 @@ import com.webserver.http.HttpParser;
 import com.webserver.http.RequestProcessor;
 import com.webserver.model.HttpRequest;
 import com.webserver.model.HttpResponse;
+import com.webserver.util.ConfigLoader;
 import com.webserver.util.Logger;
 import com.webserver.util.Telemetry;
 
@@ -16,7 +17,16 @@ public class ConnectionHandler implements Runnable {
     public ConnectionHandler(Socket socket) {
         this.clientSocket = socket;
         this.parser = new HttpParser();
-        this.processor = new RequestProcessor();
+
+
+        // Load config and create FileService using the webroot
+        ConfigLoader config = new ConfigLoader();
+        String webRoot = config.getWebRoot();
+        FileService fileService = new FileService(webRoot);
+
+        // Pass FileService to RequestProcessor
+        this.processor = new RequestProcessor(fileService);
+
         // Add a default route for testing
         processor.addRoute("/", request -> new HttpResponse.Builder()
                 .setStatusCode(200)
