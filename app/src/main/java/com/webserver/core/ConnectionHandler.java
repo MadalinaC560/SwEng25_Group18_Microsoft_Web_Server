@@ -8,6 +8,7 @@ import com.webserver.model.HttpResponse;
 import com.webserver.util.ConfigLoader;
 import com.webserver.util.Logger;
 import com.webserver.util.Telemetry;
+import com.webserver.util.FileService;
 
 public class ConnectionHandler implements Runnable {
     private final Socket clientSocket;
