@@ -15,7 +15,8 @@ repositories {
 dependencies {
     // Azure stk bom
     implementation(platform("com.azure:azure-sdk-bom:1.2.32"))
-
+    implementation("com.microsoft.azure:applicationinsights-core:2.6.4")
+    implementation("com.azure:azure-core:1.40.0")
     implementation("com.azure:azure-storage-blob")
 }
 
@@ -29,5 +30,4 @@ java {
 application {
     // Define the main class for the application.
     mainClass = "com.webserver.core.Server"
-//    mainClass = "com.webserver.azure.AzureBlobInterface"
 }
