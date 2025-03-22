@@ -1,12 +1,17 @@
 package com.webserver.azure;
 
+import com.azure.core.util.BinaryData;
 import com.azure.storage.blob.*;
 import com.azure.storage.blob.models.*;
+import com.webserver.http.RequestProcessor;
+import com.webserver.model.HttpResponse;
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
 import java.util.zip.*;
 
 public class AzureBlobInterface {
@@ -18,9 +23,10 @@ public class AzureBlobInterface {
 
     private final BlobServiceClient blobServiceClient;
     private final BlobContainerClient containerClient;
+    private final RequestProcessor processor;
 
     // Constructor initializes the clients
-    public AzureBlobInterface() {
+    public AzureBlobInterface(RequestProcessor processor) {
         this.blobServiceClient = new BlobServiceClientBuilder()
             .connectionString(CONNECTION_STRING)
             .buildClient();
@@ -28,16 +34,19 @@ public class AzureBlobInterface {
         this.containerClient = blobServiceClient.getBlobContainerClient(
             CONTAINER_NAME
         );
+
+        this.processor = processor;
+
         if (!containerClient.exists()) {
             containerClient.create();
         }
     }
 
-    public void uploadAndCreateEndpoints(
+    public ArrayList<String> upload(
         int appID, // Assumes appID is globally unique, not just unique to each user
-        String appName,
         InputStream zipStream
     ) {
+        ArrayList<String> fileList = new ArrayList<String>();
         try {
             try (ZipInputStream zipFile = new ZipInputStream(zipStream)) {
                 ZipEntry zipEntry;
@@ -52,7 +61,7 @@ public class AzureBlobInterface {
                         .getName()
                         .replaceFirst("^[^/]+", "");
 
-                    // TODO: Create Endpoints
+                    fileList.add(fileName);
 
                     String blobName = appID + fileName;
 
@@ -74,9 +83,12 @@ public class AzureBlobInterface {
         } catch (Exception ex) {
             System.err.println("Exception: " + ex.getMessage());
         }
+
+        return fileList;
     }
 
     public InputStream download(int appID, String filePath) {
+        System.out.println("Downloading " + filePath + " from Azure");
         try {
             // Calculate the full blob name using the same pattern from upload
             String blobName = appID + filePath;
@@ -103,6 +115,7 @@ public class AzureBlobInterface {
         return null;
     }
 
+    // TODO: Make sure to delete endpoints as well
     public int delete(int appID) {
         try {
             // Use the existing containerClient
@@ -145,27 +158,26 @@ public class AzureBlobInterface {
         return -1;
     }
 
-    // For testing
-    public static void main(String[] args) {
-        AzureBlobInterface abi = new AzureBlobInterface();
+    public ArrayList<String> test_upload(int appID) {
         // Test upload
-        int appID = -1;
-        String appName = "MyCoolApp";
         System.out.println("Testing upload...");
         String filePath = "/home/dylan/sweng/test_azure/test_azure.zip";
         try (
             InputStream zipStream = Files.newInputStream(Paths.get(filePath))
         ) {
-            abi.uploadAndCreateEndpoints(appID, appName, zipStream);
+            return upload(appID, zipStream);
         } catch (Exception e) {
             System.err.println("Exception: here " + e.getMessage());
+            return null;
         }
+    }
 
+    public void test_download(int appID) {
         // Test Download
         System.out.println("Testing download...");
 
         // Assuming there's a file inside the zip called "index.html"
-        try (InputStream fileStream = abi.download(appID, "/index.html")) {
+        try (InputStream fileStream = download(appID, "/index.html")) {
             if (fileStream != null) {
                 // Create output directory if it doesn't exist
                 Path outputDir = Paths.get("downloaded_files");
@@ -191,8 +203,16 @@ public class AzureBlobInterface {
         } catch (Exception e) {
             System.err.println("Download test exception: " + e.getMessage());
         }
+    }
 
-        // Test Delete
-        abi.delete(appID);
+    // TODO: Migrate this to unit tests
+    // For testing
+    public void test() {
+        int appID = -1;
+        test_upload(appID);
+
+        test_download(appID);
+
+        delete(appID);
     }
 }
