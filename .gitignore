@@ -20,3 +20,11 @@ webserver.log
 .vscode/
 
 out/
+
+buildSrc
+
+app/bin
+
+.project
+
+.settings

@@ -3,21 +3,31 @@
  */
 
 plugins {
-    id("buildlogic.java-application-conventions")
+    // Apply the application plugin to add support for building a CLI application in Java.
+    application
+}
+
+repositories {
+    // Use Maven Central for resolving dependencies.
+    mavenCentral()
 }
 
 dependencies {
-    implementation("org.apache.commons:commons-text")
-    implementation(project(":utilities"))
+    // Azure stk bom
+    implementation(platform("com.azure:azure-sdk-bom:1.2.32"))
 
-    //Azure dependencies
+    implementation("com.azure:azure-storage-blob")
+}
 
-    //SDK for application Insights
-    implementation("com.microsoft.azure:applicationinsights-core:2.6.4")
-    implementation("com.azure:azure-core:1.40.0")
+// Apply a specific Java toolchain to ease working on different environments.
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
 }
 
 application {
     // Define the main class for the application.
-    mainClass.set("com.webserver.core.Server")
+//    mainClass = "com.webserver.core.Server"
+    mainClass = "com.webserver.azure.AzureBlobInterface"
 }
