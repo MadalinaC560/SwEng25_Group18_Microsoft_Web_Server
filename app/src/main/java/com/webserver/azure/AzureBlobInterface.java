@@ -42,6 +42,8 @@ public class AzureBlobInterface {
         }
     }
 
+    // Returns a list of endpoints to be made.
+    // Each endpoint should call `download()` with the appropriate appID and filePath
     public ArrayList<String> upload(
         int appID, // Assumes appID is globally unique, not just unique to each user
         InputStream zipStream
