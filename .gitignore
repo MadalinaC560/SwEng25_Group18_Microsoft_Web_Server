@@ -28,3 +28,5 @@ app/bin
 .project
 
 .settings
+
+app/downloaded_files
