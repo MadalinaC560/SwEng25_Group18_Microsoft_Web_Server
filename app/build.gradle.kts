@@ -28,6 +28,6 @@ java {
 
 application {
     // Define the main class for the application.
-//    mainClass = "com.webserver.core.Server"
-    mainClass = "com.webserver.azure.AzureBlobInterface"
+    mainClass = "com.webserver.core.Server"
+//    mainClass = "com.webserver.azure.AzureBlobInterface"
 }
