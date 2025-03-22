@@ -16,23 +16,29 @@ public class AzureBlobInterface {
     );
     private static final String CONTAINER_NAME = "userfiles";
 
-    public static void uploadAndCreateEndpoints(
+    private final BlobServiceClient blobServiceClient;
+    private final BlobContainerClient containerClient;
+
+    // Constructor initializes the clients
+    public AzureBlobInterface() {
+        this.blobServiceClient = new BlobServiceClientBuilder()
+            .connectionString(CONNECTION_STRING)
+            .buildClient();
+
+        this.containerClient = blobServiceClient.getBlobContainerClient(
+            CONTAINER_NAME
+        );
+        if (!containerClient.exists()) {
+            containerClient.create();
+        }
+    }
+
+    public void uploadAndCreateEndpoints(
         int appID, // Assumes appID is globally unique, not just unique to each user
         String appName,
         InputStream zipStream
     ) {
         try {
-            BlobServiceClient blobServiceClient = new BlobServiceClientBuilder()
-                .connectionString(CONNECTION_STRING)
-                .buildClient();
-
-            BlobContainerClient containerClient =
-                blobServiceClient.getBlobContainerClient(CONTAINER_NAME);
-
-            if (!containerClient.exists()) {
-                containerClient.create();
-            }
-
             try (ZipInputStream zipFile = new ZipInputStream(zipStream)) {
                 ZipEntry zipEntry;
 
@@ -70,25 +76,8 @@ public class AzureBlobInterface {
         }
     }
 
-    public static InputStream download(int appID, String filePath) {
+    public InputStream download(int appID, String filePath) {
         try {
-            // Create the blob service client
-            BlobServiceClient blobServiceClient = new BlobServiceClientBuilder()
-                .connectionString(CONNECTION_STRING)
-                .buildClient();
-
-            // Get container client
-            BlobContainerClient containerClient =
-                blobServiceClient.getBlobContainerClient(CONTAINER_NAME);
-
-            // Make sure the container exists
-            if (!containerClient.exists()) {
-                System.err.println(
-                    "Container doesn't exist: " + CONTAINER_NAME
-                );
-                return null;
-            }
-
             // Calculate the full blob name using the same pattern from upload
             String blobName = appID + filePath;
 
@@ -114,6 +103,7 @@ public class AzureBlobInterface {
         return null;
     }
 
+    // For testing
     public static void main(String[] args) {
         // Test upload
         int appID = 1;
