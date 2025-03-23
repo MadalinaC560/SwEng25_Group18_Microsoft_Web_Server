@@ -58,7 +58,8 @@ public class AzureBlobInterface {
 
                     String fileName = zipEntry
                         .getName()
-                        .replaceFirst("^[^/]+", "");
+                        .replaceFirst("^[^/]+", "")
+                        .substring(1);
 
                     fileList.add(fileName);
 
@@ -68,6 +69,8 @@ public class AzureBlobInterface {
                         blobName
                     );
                     System.out.println("Uploading: " + blobName);
+
+                    System.out.println("Zipentrysize: " + zipEntry.getSize());
 
                     // Upload directly from ZipInputStream
                     blobClient.upload(zipFile, zipEntry.getSize(), true);
