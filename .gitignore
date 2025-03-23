@@ -21,5 +21,14 @@ webserver.log
 
 out/
 
-*.properties
-!gradle.properties
+buildSrc
+
+app/bin
+
+.project
+
+.settings
+
+app/downloaded_files
+
+app/.classpath
