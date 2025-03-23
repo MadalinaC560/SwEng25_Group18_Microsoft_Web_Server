@@ -20,3 +20,6 @@ webserver.log
 .vscode/
 
 out/
+
+*.properties
+!gradle.properties
