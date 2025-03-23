@@ -8,8 +8,10 @@ import com.webserver.model.HttpResponse;
 import com.webserver.util.ConfigLoader;
 import com.webserver.util.FileService;
 import com.webserver.util.Logger;
+import com.webserver.util.Telemetry;
 import java.net.Socket;
 import java.util.ArrayList;
+
 
 public class ConnectionHandler implements Runnable {
 
