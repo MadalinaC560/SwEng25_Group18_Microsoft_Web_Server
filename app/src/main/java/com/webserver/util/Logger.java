@@ -2,11 +2,12 @@
 
 package com.webserver.util;
 
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.PrintWriter;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.io.FileWriter;
-import java.io.PrintWriter;
-import java.io.IOException;
+
 
 public class Logger {
     private static final String LOG_FILE = "webserver.log";
@@ -58,10 +59,7 @@ public class Logger {
 //import java.util.HashMap;
 //import java.util.Map;
 //
-//import com.microsoft.applicationinsights.TelemetryClient;
-//import com.microsoft.applicationinsights.TelemetryConfiguration;
-//import com.microsoft.applicationinsights.telemetry.SeverityLevel;
-//
+
 //public class Logger {
 //    private static final String LOG_FILE = "webserver.log";
 //    private static final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
