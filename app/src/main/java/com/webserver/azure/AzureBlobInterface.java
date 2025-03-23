@@ -23,10 +23,9 @@ public class AzureBlobInterface {
 
     private final BlobServiceClient blobServiceClient;
     private final BlobContainerClient containerClient;
-    private final RequestProcessor processor;
 
     // Constructor initializes the clients
-    public AzureBlobInterface(RequestProcessor processor) {
+    public AzureBlobInterface() {
         this.blobServiceClient = new BlobServiceClientBuilder()
             .connectionString(CONNECTION_STRING)
             .buildClient();
@@ -34,8 +33,6 @@ public class AzureBlobInterface {
         this.containerClient = blobServiceClient.getBlobContainerClient(
             CONTAINER_NAME
         );
-
-        this.processor = processor;
 
         if (!containerClient.exists()) {
             containerClient.create();

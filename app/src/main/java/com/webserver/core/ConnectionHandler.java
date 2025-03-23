@@ -12,7 +12,6 @@ import com.webserver.util.Telemetry;
 import java.net.Socket;
 import java.util.ArrayList;
 
-
 public class ConnectionHandler implements Runnable {
 
     private final Socket clientSocket;
@@ -32,7 +31,7 @@ public class ConnectionHandler implements Runnable {
         // Pass FileService to RequestProcessor
         this.processor = new RequestProcessor(fileService);
 
-        this.azureInterface = new AzureBlobInterface(processor);
+        this.azureInterface = new AzureBlobInterface();
 
         // Add a default route for testing
         processor.addRoute("/", request ->
@@ -44,7 +43,7 @@ public class ConnectionHandler implements Runnable {
                 .build()
         );
         // Testing:
-        // test_azure_hosting();
+        test_azure_hosting();
     }
 
     public void test_azure_hosting() {
@@ -124,7 +123,7 @@ public class ConnectionHandler implements Runnable {
             HttpResponse response = processor.process(request);
             response.write(clientSocket.getOutputStream());
 
-            Telemetry.trackResponseTime(startTime);//for our use
+            Telemetry.trackResponseTime(startTime); //for our use
             //Logger.trackFileMetrics(fileName, startTime); //we will insert a valid file here.
 
             clientSocket.close();
