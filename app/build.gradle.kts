@@ -13,6 +13,10 @@ repositories {
 }
 
 dependencies {
+
+    testImplementation("org.junit.jupiter:junit-jupiter:5.9.3")
+
+
     // Azure stk bom
     implementation(platform("com.azure:azure-sdk-bom:1.2.32"))
     implementation("com.microsoft.azure:applicationinsights-core:2.6.4")
