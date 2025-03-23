@@ -11,6 +11,8 @@ import com.webserver.util.Logger;
 import com.webserver.util.Telemetry;
 import java.net.Socket;
 import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 public class ConnectionHandler implements Runnable {
 
@@ -42,17 +44,69 @@ public class ConnectionHandler implements Runnable {
                 .setBody("Hello Group 18, Cloudle is Online!!")
                 .build()
         );
+
+        processor.addRoute("/MyCoolApp/", request ->
+            new HttpResponse.Builder()
+                .setStatusCode(200)
+                .setStatusMessage("OK")
+                .addHeader("Content-Type", "text/plain")
+                .setBody(return_hello())
+                .build()
+        );
+
+        processor.addRoute("/upload", request -> handle_upload(request));
+
         // Testing:
         test_azure_hosting();
+    }
+
+    private HttpResponse handle_upload(HttpRequest request) {
+        // I am reading the zip from disk and not the request
+        // TODO: Replace reading it from disk with reading it from the HTTP request that has a .zip file embedded
+
+        System.out.println("Method: " + request.getMethod());
+        System.out.println("Path: " + request.getPath());
+        System.out.println("Headers: [");
+        for (Map.Entry<String, List<String>> entry : request
+            .getHeaders()
+            .entrySet()) {
+            String key = entry.getKey();
+            List<String> values = entry.getValue();
+
+            System.out.println("Key: " + key);
+            for (String value : values) {
+                System.out.println("Value: " + value);
+            }
+        }
+        System.out.println("]");
+        System.out.println("Body: " + request.getBody());
+
+        return new HttpResponse.Builder()
+            .setStatusCode(200)
+            .setStatusMessage("OK")
+            .addHeader("Content-Type", "text/plain")
+            .setBody("uploaded")
+            .build();
+    }
+
+    private String return_hello() {
+        return "hello";
     }
 
     public void test_azure_hosting() {
         System.out.println("Testing azure");
         int testAppID = 1;
-        String testAppName = "MyCoolApp";
+        String testAppName = "MyCoolApp/";
         ArrayList<String> endpointsToMake = azureInterface.test_upload(
             testAppID
         );
+
+        System.out.println("Endpoints to make:[");
+        for (String endpointName : endpointsToMake) {
+            System.out.println(endpointName + ", ");
+        }
+        System.out.println("]");
+
         for (String endpointPath : endpointsToMake) {
             final String endpointPathWithAppName = testAppName + endpointPath;
             System.out.println(
@@ -74,40 +128,98 @@ public class ConnectionHandler implements Runnable {
 
             System.out.println("fileType: " + fileType);
 
-            if (fileType == "html" || fileType == "css" || fileType == "js") {
-                processor.addRoute(
-                    "/" + testAppName + endpointPathWithAppName,
-                    request -> {
-                        try {
-                            return new HttpResponse.Builder()
-                                .setStatusCode(200)
-                                .setStatusMessage("OK")
-                                .addHeader("Content-Type", fileType)
-                                .setBody(
-                                    new String(
-                                        azureInterface
-                                            .download(
-                                                testAppID,
-                                                endpointPathWithAppName
-                                            )
-                                            .readAllBytes()
+            // Remove the first /
+
+            if (
+                fileExtension.equals("html") ||
+                fileExtension.equals("css") ||
+                fileExtension.equals("js")
+            ) {
+                processor.addRoute("/" + endpointPathWithAppName, request -> {
+                    try {
+                        return new HttpResponse.Builder()
+                            .setStatusCode(200)
+                            .setStatusMessage("OK")
+                            .addHeader("Content-Type", fileType)
+                            .setBody(
+                                get_plain_text_file_from_azure(
+                                    azureInterface,
+                                    testAppID,
+                                    endpointPathWithAppName.replaceFirst(
+                                        "^[^/]+",
+                                        ""
                                     )
                                 )
-                                .build();
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                            return new HttpResponse.Builder()
-                                .setStatusCode(500)
-                                .setStatusMessage("Internal Server Error")
-                                .addHeader("Content-Type", "text/plain")
-                                .setBody("Error: " + e.getMessage())
-                                .build();
-                        }
+                            )
+                            .build();
+                    } catch (Exception e) {
+                        System.out.println("exception: " + e.getMessage());
+                        return new HttpResponse.Builder()
+                            .setStatusCode(404)
+                            .setStatusMessage("Not Found")
+                            .addHeader("Content-Type", fileType)
+                            .setBody("Not found")
+                            .build();
                     }
-                );
+                });
+            } else {
+                processor.addRoute("/" + endpointPathWithAppName, request -> {
+                    try {
+                        return new HttpResponse.Builder()
+                            .setStatusCode(200)
+                            .setStatusMessage("OK")
+                            .addHeader("Content-Type", fileType)
+                            .setRawBody(
+                                get_image_from_azure(
+                                    azureInterface,
+                                    testAppID,
+                                    endpointPathWithAppName.replaceFirst(
+                                        "^[^/]+",
+                                        ""
+                                    )
+                                )
+                            )
+                            .build();
+                    } catch (Exception e) {
+                        System.out.println("exception: " + e.getMessage());
+                        return new HttpResponse.Builder()
+                            .setStatusCode(404)
+                            .setStatusMessage("Not Found")
+                            .addHeader("Content-Type", fileType)
+                            .setBody("Not found")
+                            .build();
+                    }
+                });
             }
-
             System.out.println("Endpoint made for " + endpointPathWithAppName);
+        }
+    }
+
+    private byte[] get_image_from_azure(
+        AzureBlobInterface azureInterface,
+        int testAppID,
+        String path
+    ) {
+        try {
+            return azureInterface.download(testAppID, path).readAllBytes();
+        } catch (Exception e) {
+            System.out.println("Exception: " + e.getMessage());
+            return null;
+        }
+    }
+
+    private String get_plain_text_file_from_azure(
+        AzureBlobInterface azureInterface,
+        int testAppID,
+        String path
+    ) {
+        try {
+            return new String(
+                azureInterface.download(testAppID, path).readAllBytes()
+            );
+        } catch (Exception e) {
+            System.out.println("Exception: " + e.getMessage());
+            return "not found ;(";
         }
     }
 
