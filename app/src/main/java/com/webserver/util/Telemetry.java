@@ -46,16 +46,20 @@ public class Telemetry{
     }
 
     //this is for the actual users, assuming we are taking user ID's and served files as input and plotted to hashmap.
-    public static void trackFileMetrics(String fileName){
+    public static void trackFileMetrics(String appID){
          //Send details to the application insights
         try {
 
              //Hashmap to filter metrics by filename (add more to hashmap to differentiate user files)
             Map<String, String> user  = new HashMap<>();
-            user.put("fileName", fileName);
+            user.put("appID", appID);
 
             // Track the file accesses
             client.trackEvent("accessedFile", user, null);
+
+            //Track different CPU variables here
+            long numberThreadsActive = Thread.activeCount();
+            client.trackMetric("ActiveThreads", numberThreadsActive, 1, numberThreadsActive, numberThreadsActive, user);
 
             // Track the memory usage for the specific file
             long totalMemoryUsage =  Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
