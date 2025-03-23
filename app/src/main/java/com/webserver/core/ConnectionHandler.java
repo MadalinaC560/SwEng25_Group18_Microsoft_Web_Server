@@ -122,7 +122,7 @@ public class ConnectionHandler implements Runnable {
             HttpResponse response = processor.process(request);
             response.write(clientSocket.getOutputStream());
 
-            //            Logger.trackResponseTime(startTime);//for our use
+            Telemetry.trackResponseTime(startTime);//for our use
             //Logger.trackFileMetrics(fileName, startTime); //we will insert a valid file here.
 
             clientSocket.close();
