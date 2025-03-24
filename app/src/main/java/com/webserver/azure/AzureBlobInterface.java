@@ -163,7 +163,9 @@ public class AzureBlobInterface {
     public ArrayList<String> test_upload(int appID) {
         // Test upload
         System.out.println("Testing upload...");
-        String filePath = "/home/dylan/sweng/test_azure/test_azure.zip";
+
+        String filePath = System.getProperty("user.dir") + "/test_azure/test_azure.zip";
+        System.out.println("Uploaded file path: " + filePath);
         try (
             InputStream zipStream = Files.newInputStream(Paths.get(filePath))
         ) {
