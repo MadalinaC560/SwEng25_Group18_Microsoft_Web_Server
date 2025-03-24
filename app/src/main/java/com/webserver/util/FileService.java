@@ -67,12 +67,14 @@ public class FileService {
     private Path resolvePath(String requestPath) {
         requestPath = requestPath.replaceAll("^/+", "");
 
+        //TODO - Bug to fix, if we get .../index.html/ - dir is assumed, which is wrong
         if (requestPath.isEmpty() || requestPath.endsWith("/"))
         {
             requestPath += "index.html";
         }
         Path webRootPath = Paths.get(webRoot).toAbsolutePath();
         Path resolvedPath = webRootPath.resolve(requestPath).normalize();
+        System.out.println("This is the resolved Path" + resolvedPath);
         return resolvedPath;
     }
 }
