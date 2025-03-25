@@ -1,52 +1,67 @@
 package com.webserver.util;
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.InputStream;
+import javax.script.ScriptEngine;
+import javax.script.ScriptEngineManager;
 import java.util.HashMap;
 import java.util.Map;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.InputStream;
 
 public class ScriptProcessor {
-    public static final Map<String, String[]> SCRIPT_COMMANDS = new HashMap<>();
+    public static final Map<String, String> SUPPORTED_SCRIPTS = new HashMap<>();
+
     static {
-        SCRIPT_COMMANDS.put("php", new String[] {"php"});
-        SCRIPT_COMMANDS.put("js", new String [] {"node"});
+        SUPPORTED_SCRIPTS.put("js", "graal.js");
     }
 
-    public static byte[] executeScript(String scriptPath)
+    public static String executeScript(String scriptPath, Map<String, Object> bindings)
     {
-        String extension = getFileExtension(scriptPath);
-        String [] command = SCRIPT_COMMANDS.get(extension);
-        if (command == null)
+        return "";
+    }
+
+    // Helper Functions
+    public static boolean isScript(String fileExtension) {
+        if (SUPPORTED_SCRIPTS.containsKey(fileExtension))
         {
-            return "can't execute command".getBytes();
+            return true;
         }
-        try{
-            ProcessBuilder processBuilder = new ProcessBuilder(command[0], scriptPath);
-            processBuilder.directory(new File(scriptPath).getParentFile());
-            Process process = processBuilder.start();
-
-            InputStream inputStream = process.getInputStream();
-            ByteArrayOutputStream result = new ByteArrayOutputStream();
-            byte[] buffer = new byte[1024];
-            int length;
-            while ((length = inputStream.read(buffer)) != -1) {
-                result.write(buffer, 0, length);
-            }
-
-            process.waitFor();
-            return result.toByteArray();
-        }
-
-        catch(Exception e) {
-            return "An error occured".getBytes();
-        }
+        return false;
     }
 
-    //Returns the file extension
-    public static String getFileExtension(String scriptPath)
-    {
+    public static String getFileExtension(String scriptPath) {
         int lastDotIndex = scriptPath.lastIndexOf('.');
         String fileExtension = lastDotIndex == -1 ?"" : scriptPath.substring(lastDotIndex+1);
         return fileExtension;
     }
+
+    public static ScriptEngine getScriptEngineByExtension(String extension) {
+        ScriptEngineManager manager = new ScriptEngineManager();
+        String engineName = SUPPORTED_SCRIPTS.get(extension);
+        ScriptEngine engine = manager.getEngineByName(engineName);
+        if (engine != null)
+        {
+            return engine;
+        }
+        return null;
+    }
+
+    public static String loadScriptFromFile(String scriptPath) throws IOException {
+        try (InputStream input = new FileInputStream(new File(scriptPath));
+             ByteArrayOutputStream result = new ByteArrayOutputStream()) {
+            byte[] buffer = new byte[4096];
+            int length;
+            while ((length = input.read(buffer)) != -1) {
+                result.write(buffer, 0, length);
+            }
+            return result.toString("UTF-8");
+        } catch (IOException e) {
+            return "Error";
+        }
+    }
 }
+
+
+
+
