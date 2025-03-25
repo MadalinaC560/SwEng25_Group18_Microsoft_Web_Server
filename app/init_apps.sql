@@ -1,4 +1,5 @@
 CREATE TABLE IF NOT EXISTS apps (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    app_name TEXT NOT NULL
+    app_name TEXT NOT NULL,
+    tenant_id INTEGER
 )

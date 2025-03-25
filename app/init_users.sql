@@ -2,5 +2,6 @@ CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     username TEXT NOT NULL UNIQUE,
     email TEXT NOT NULL UNIQUE,
-    pw_hash TEXT NOT NULL
+    pw_hash TEXT NOT NULL,
+    tenant_id INTEGER
 )

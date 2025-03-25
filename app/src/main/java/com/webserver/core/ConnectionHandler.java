@@ -20,9 +20,11 @@ import com.webserver.util.*;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.net.Socket;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import org.mindrot.jbcrypt.BCrypt;
 
 
 public class ConnectionHandler implements Runnable {
@@ -59,14 +61,6 @@ public class ConnectionHandler implements Runnable {
                         .build()
         );
 
-        processor.addRoute("/MyCoolApp/", request ->
-                new HttpResponse.Builder()
-                        .setStatusCode(200)
-                        .setStatusMessage("OK")
-                        .addHeader("Content-Type", "text/plain")
-                        .setBody(return_hello())
-                        .build()
-        );
         processor.addRoute("/api/refresh", request -> {
             if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
                 return new HttpResponse.Builder()
@@ -278,30 +272,81 @@ public class ConnectionHandler implements Runnable {
             }
         });
 
-        processor.addRoute("/upload", this::handle_upload);
         processor.addRoute("/new_tenant", this::handle_new_tenant);
+        processor.addRoute("/new_user", this::handle_new_user);
 
         // Testing:
 //        test_azure_hosting();
     }
 
-    private HttpResponse handle_new_tenant(HttpRequest request){
+    private HttpResponse handle_new_user(HttpRequest request) {
         // Body parameters:
-        // tenant_name
+        // username, email, password, tenant_name
 
-        System.out.println("got here");
+        System.out.println("Request body: " + request.getTextBody());
 
         // Process the json body
         ObjectMapper mapper = new ObjectMapper();
         Map<String, Object> map = null;
         try {
-            map = mapper.readValue(request.getBody(), new TypeReference<Map<String, Object>>() {});
+            map = mapper.readValue(request.getTextBody(), new TypeReference<Map<String, Object>>() {});
         } catch (JsonProcessingException e) {
             System.out.println("Error parsing JSON");
             return null;
         }
 
         String tenant_name = (String) map.get("tenant_name");
+        String username = (String) map.get("username");
+        String email = (String) map.get("email");
+        String password = (String) map.get("password");
+        
+        String pw_hash = BCrypt.hashpw(password, BCrypt.gensalt());
+        System.out.println("Hashed password: " + pw_hash);
+
+        int tenant_id;
+        try {
+            tenant_id = databaseManager.getTenantIdFromName(tenant_name);
+        } catch (SQLException e) {
+            System.out.println("Error getting tenant_id");
+            return null;
+        }
+
+        try {
+            databaseManager.newUser(username, email, pw_hash, tenant_id);
+        } catch (Exception e) {
+            System.out.println("Error creating new user: " + e.getMessage());
+            return null;
+        }
+
+        System.out.println("New user (" + username + ") created");
+
+        return new HttpResponse.Builder()
+                .setStatusCode(200)
+                .setStatusMessage("OK")
+                .addHeader("Content-Type", "text/plain")
+                .setBody("New user created")
+                .build();
+    }
+
+    private HttpResponse handle_new_tenant(HttpRequest request){
+        // Body parameters:
+        // tenant_name
+
+        System.out.println("Request body: " + request.getTextBody());
+
+
+        // Process the json body
+        ObjectMapper mapper = new ObjectMapper();
+        Map<String, Object> map = null;
+        try {
+            map = mapper.readValue(request.getTextBody(), new TypeReference<Map<String, Object>>() {});
+        } catch (JsonProcessingException e) {
+            System.out.println("Error parsing JSON");
+            return null;
+        }
+
+        String tenant_name = (String) map.get("tenant_name");
+        System.out.println("Tenant name: " + tenant_name);
         try {
             databaseManager.newTenant(tenant_name);
         } catch (Exception e) {
@@ -355,19 +400,54 @@ public class ConnectionHandler implements Runnable {
 
 
     /**
-     * This method now reads the raw bytes from the request body (the uploaded zip),
-     * retrieves appId from the query param, and calls AzureBlobInterface.upload(...)
+     * This method now reads the raw bytes from the request body (the uploaded zip)
+     * and calls AzureBlobInterface.upload(...)
      */
     private HttpResponse handle_upload(HttpRequest request) {
+        // Body parameters:
+        // user_name, app_name
         System.out.println("Method: " + request.getMethod());
         System.out.println("Path: " + request.getPath());
         System.out.println("Headers: " + request.getHeaders());
         // The old code used request.getBody() (a String), but we need binary data:
         //  -> Use request.getRawBody() after you’ve modified HttpRequest to store a byte[].
 
-        // 1) Get appId from query param (default to 112233445 if missing)
-        String appIdParam = request.getQueryParam("appId").orElse("112233445");
-        int appId = Integer.parseInt(appIdParam);
+//        // 1) Get appId from query param (default to 112233445 if missing)
+//        String appIdParam = request.getQueryParam("appId").orElse("112233445");
+//        int appId = Integer.parseInt(appIdParam);
+
+        // Create a new app in the db
+        ObjectMapper mapper = new ObjectMapper();
+        Map<String, Object> map = null;
+        try {
+            map = mapper.readValue(request.getTextBody(), new TypeReference<Map<String, Object>>() {});
+        } catch (JsonProcessingException e) {
+            System.out.println("Error parsing JSON");
+            return null;
+        }
+
+        int tenant_id;
+        try {
+            tenant_id = databaseManager.getTenantIdFromUserID(databaseManager.getUserIdFromName((String) map.get("user_name")));
+        } catch (SQLException e) {
+            System.out.println("Error getting tenant_id");
+            return null;
+        }
+
+        try {
+            databaseManager.newApp((String) map.get("user_name"), tenant_id);
+        } catch (SQLException e) {
+            System.out.println("Error creating new app");
+            return null;
+        }
+
+        int appId;
+        try {
+            appId = databaseManager.getAppIdFromName((String) map.get("app_name"));
+        } catch (SQLException e) {
+            System.out.println("Error getting app id");
+            return null;
+        }
 
         // 2) Grab the raw bytes from HttpRequest
         byte[] zipBytes = request.getRawBody();
@@ -410,10 +490,6 @@ public class ConnectionHandler implements Runnable {
                     .setBody("Error uploading zip: " + e.getMessage())
                     .build();
         }
-    }
-
-    private String return_hello() {
-        return "hello";
     }
 
     /**

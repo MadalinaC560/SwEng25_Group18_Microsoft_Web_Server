@@ -32,6 +32,7 @@ dependencies {
     implementation("com.fasterxml.jackson.core:jackson-core:2.15.2")
     implementation("com.fasterxml.jackson.core:jackson-annotations:2.15.2")
     implementation("com.google.code.gson:gson:2.10")
+    implementation("org.mindrot:jbcrypt:0.4")
 }
 
 // Apply a specific Java toolchain to ease working on different environments.
