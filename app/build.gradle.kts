@@ -17,11 +17,20 @@ dependencies {
     testImplementation("org.junit.jupiter:junit-jupiter:5.9.3")
 
 
+    // SQLite JDBC driver
+    implementation("org.xerial:sqlite-jdbc:3.44.1.0")
+
+    // Apache Commons DbUtils
+    implementation("commons-dbutils:commons-dbutils:1.7")
+
     // Azure stk bom
     implementation(platform("com.azure:azure-sdk-bom:1.2.32"))
     implementation("com.microsoft.azure:applicationinsights-core:2.6.4")
     implementation("com.azure:azure-core:1.40.0")
     implementation("com.azure:azure-storage-blob")
+    implementation("com.fasterxml.jackson.core:jackson-databind:2.15.2")
+    implementation("com.fasterxml.jackson.core:jackson-core:2.15.2")
+    implementation("com.fasterxml.jackson.core:jackson-annotations:2.15.2")
 }
 
 // Apply a specific Java toolchain to ease working on different environments.

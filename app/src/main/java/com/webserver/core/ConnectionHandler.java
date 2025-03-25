@@ -1,6 +1,10 @@
 package com.webserver.core;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.webserver.azure.AzureBlobInterface;
+import com.webserver.db.DatabaseManager;
 import com.webserver.http.HttpParser;
 import com.webserver.http.RequestProcessor;
 import com.webserver.model.HttpRequest;
@@ -9,10 +13,12 @@ import com.webserver.util.ConfigLoader;
 import com.webserver.util.FileService;
 import com.webserver.util.Logger;
 import com.webserver.util.Telemetry;
+
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+
 
 public class ConnectionHandler implements Runnable {
 
@@ -20,10 +26,12 @@ public class ConnectionHandler implements Runnable {
     private final HttpParser parser;
     private final RequestProcessor processor;
     private final AzureBlobInterface azureInterface;
+    private final DatabaseManager databaseManager;
 
     public ConnectionHandler(Socket socket) {
         this.clientSocket = socket;
         this.parser = new HttpParser();
+        this.databaseManager = new DatabaseManager();
 
         // Load config and create FileService using the webroot
         ConfigLoader config = new ConfigLoader();
@@ -54,10 +62,46 @@ public class ConnectionHandler implements Runnable {
                 .build()
         );
 
-        processor.addRoute("/upload", request -> handle_upload(request));
+        processor.addRoute("/upload", this::handle_upload);
+        processor.addRoute("/new_tenant", this::handle_new_tenant);
 
         // Testing:
-        test_azure_hosting();
+//        test_azure_hosting();
+    }
+
+    private HttpResponse handle_new_tenant(HttpRequest request){
+        // Body parameters:
+        // tenant_name
+
+        System.out.println("got here");
+
+        // Process the json body
+        ObjectMapper mapper = new ObjectMapper();
+        Map<String, Object> map = null;
+        try {
+            map = mapper.readValue(request.getBody(), new TypeReference<Map<String, Object>>() {});
+        } catch (JsonProcessingException e) {
+            System.out.println("Error parsing JSON");
+            return null;
+        }
+
+        String tenant_name = (String) map.get("tenant_name");
+        try {
+            databaseManager.newTenant(tenant_name);
+        } catch (Exception e) {
+            System.out.println("Error creating new tenant");
+            return null;
+        }
+
+        System.out.println("New tenant (" + tenant_name + ") created");
+
+        return new HttpResponse.Builder()
+                .setStatusCode(200)
+                .setStatusMessage("OK")
+                .addHeader("Content-Type", "text/plain")
+                .setBody("New tenant created")
+                .build();
+
     }
 
     private HttpResponse handle_upload(HttpRequest request) {
