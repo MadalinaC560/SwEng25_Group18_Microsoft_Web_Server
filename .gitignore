@@ -34,3 +34,5 @@ app/bin
 app/downloaded_files
 
 app/.classpath
+
+app/sample.db

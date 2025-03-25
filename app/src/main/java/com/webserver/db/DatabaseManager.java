@@ -51,7 +51,7 @@ public class DatabaseManager {
     }
 
     public void newApp(String app_name, int tenant_id) throws SQLException {
-        String query = "INSERT INTO apps (app_name, tenant_id) VALUES (?, ?, ?, ?)";
+        String query = "INSERT INTO apps (app_name, tenant_id) VALUES (?, ?)";
         try (Connection conn = DriverManager.getConnection(DB_URL)) {
             queryRunner.update(conn, query, app_name,tenant_id);
         }

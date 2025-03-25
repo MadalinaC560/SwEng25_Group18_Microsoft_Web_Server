@@ -404,8 +404,8 @@ public class ConnectionHandler implements Runnable {
      * and calls AzureBlobInterface.upload(...)
      */
     private HttpResponse handle_upload(HttpRequest request) {
-        // Body parameters:
-        // user_name, app_name
+        // query parameters:
+        // username, app_name,
         System.out.println("Method: " + request.getMethod());
         System.out.println("Path: " + request.getPath());
         System.out.println("Headers: " + request.getHeaders());
@@ -417,33 +417,41 @@ public class ConnectionHandler implements Runnable {
 //        int appId = Integer.parseInt(appIdParam);
 
         // Create a new app in the db
-        ObjectMapper mapper = new ObjectMapper();
-        Map<String, Object> map = null;
-        try {
-            map = mapper.readValue(request.getTextBody(), new TypeReference<Map<String, Object>>() {});
-        } catch (JsonProcessingException e) {
-            System.out.println("Error parsing JSON");
-            return null;
-        }
+//        ObjectMapper mapper = new ObjectMapper();
+//        Map<String, Object> map = null;
+//        try {
+//            map = mapper.readValue(request.getTextBody(), new TypeReference<Map<String, Object>>() {});
+//        } catch (JsonProcessingException e) {
+//            System.out.println("Error parsing JSON");
+//            return null;
+//        }
+//
 
+        String user_name = request.getQueryParam("username").orElse(null);
+        System.out.println("User name: " + user_name);
         int tenant_id;
         try {
-            tenant_id = databaseManager.getTenantIdFromUserID(databaseManager.getUserIdFromName((String) map.get("user_name")));
+            tenant_id = databaseManager.getTenantIdFromUserID(databaseManager.getUserIdFromName(user_name));
         } catch (SQLException e) {
             System.out.println("Error getting tenant_id");
             return null;
         }
 
+        System.out.println("Tenant id: " + tenant_id);
+        String app_name = request.getQueryParam("app_name").orElse(null);
+        System.out.println("App name: " + app_name);
+
         try {
-            databaseManager.newApp((String) map.get("user_name"), tenant_id);
+            databaseManager.newApp(app_name, tenant_id);
         } catch (SQLException e) {
             System.out.println("Error creating new app");
+            System.out.println("Error: " + e.getMessage());
             return null;
         }
 
         int appId;
         try {
-            appId = databaseManager.getAppIdFromName((String) map.get("app_name"));
+            appId = databaseManager.getAppIdFromName(app_name);
         } catch (SQLException e) {
             System.out.println("Error getting app id");
             return null;
@@ -464,12 +472,15 @@ public class ConnectionHandler implements Runnable {
         try (InputStream zipStream = new ByteArrayInputStream(zipBytes)) {
 
             // 3) Upload to Azure
-            List<String> uploadedFiles = azureInterface.upload(appId, zipStream);
+            ArrayList<String> endpointsToMake = azureInterface.upload(appId, zipStream);
+
+            // Create endpoints
+            createEndpoints(endpointsToMake, app_name, appId);
 
             // 4) Return success
             String msg = String.format(
                     "Uploaded %d file(s) to Azure for appId=%d",
-                    uploadedFiles.size(),
+                    endpointsToMake.size(),
                     appId
             );
             System.out.println(msg);
@@ -501,7 +512,11 @@ public class ConnectionHandler implements Runnable {
         int testAppID = 1;
         String testAppName = "MyCoolApp/";
         ArrayList<String> endpointsToMake = azureInterface.test_upload(testAppID);
+        createEndpoints(endpointsToMake, testAppName, testAppID);
 
+    }
+
+    private void createEndpoints(ArrayList<String> endpointsToMake, String appName, int appID) {
         System.out.println("Endpoints to make:[");
         for (String endpointName : endpointsToMake) {
             System.out.println(endpointName + ", ");
@@ -509,7 +524,7 @@ public class ConnectionHandler implements Runnable {
         System.out.println("]");
 
         for (String endpointPath : endpointsToMake) {
-            final String endpointPathWithAppName = testAppName + endpointPath;
+            final String endpointPathWithAppName = appName + endpointPath;
             System.out.println("Making endpoint for " + endpointPathWithAppName);
 
             String fileExtension = endpointPathWithAppName
@@ -540,7 +555,7 @@ public class ConnectionHandler implements Runnable {
                                 .setBody(
                                         get_plain_text_file_from_azure(
                                                 azureInterface,
-                                                testAppID,
+                                                appID,
                                                 endpointPathWithAppName.replaceFirst("^[^/]+", "")
                                         )
                                 )
@@ -567,7 +582,7 @@ public class ConnectionHandler implements Runnable {
                                 .setRawBody(
                                         get_image_from_azure(
                                                 azureInterface,
-                                                testAppID,
+                                                appID,
                                                 endpointPathWithAppName.replaceFirst("^[^/]+", "")
                                         )
                                 )
