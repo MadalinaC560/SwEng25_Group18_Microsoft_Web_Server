@@ -17,6 +17,8 @@ webserver.log
 
 /node_modules
 
+cloudle_ui/node_modules
+
 .vscode/
 
 out/
