@@ -37,3 +37,9 @@ application {
     // Define the main class for the application.
     mainClass = "com.webserver.core.Server"
 }
+
+tasks.jar {
+    manifest {
+        attributes["Main-Class"] = application.mainClass.get()
+    }
+}
