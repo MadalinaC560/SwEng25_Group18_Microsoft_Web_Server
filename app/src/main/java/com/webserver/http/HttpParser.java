@@ -1,22 +1,15 @@
 package com.webserver.http;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-
 import com.webserver.model.HttpRequest;
 import com.webserver.util.Logger;
 
+import java.io.*;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
 public class HttpParser {
+
     public enum HttpMethod {
         GET, POST, PUT, DELETE, PATCH, HEAD, OPTIONS;
-
         public static HttpMethod fromString(String method) {
             try {
                 return valueOf(method.toUpperCase());
@@ -27,127 +20,103 @@ public class HttpParser {
     }
 
     public HttpRequest parse(InputStream input) throws IOException {
-        Optional<List<String>> requestLines = readMessage(input);
 
-        if(requestLines.isEmpty()){
-            throw new IOException("Invalid Http Request");
+        // 1) Read the request line
+        String requestLine = readRawLine(input);
+        if (requestLine == null || requestLine.isEmpty()) {
+            throw new IOException("Empty or invalid request line");
         }
 
-        List<String> actualLines = requestLines.get();
+        // parse something like: POST /api/applications HTTP/1.1
+        String[] parts = requestLine.split(" ");
+        if (parts.length != 3) {
+            throw new IOException("Malformed request line: " + requestLine);
+        }
+        HttpMethod method = HttpMethod.fromString(parts[0]);
+        if (method == null) {
+            throw new IOException("Unsupported HTTP method: " + parts[0]);
+        }
+        String path = parts[1];
+        String httpVersion = parts[2]; // not heavily used right now
 
-        return buildRequest(actualLines, input);
+        // 2) Read headers until a blank line
+        Map<String, List<String>> headersMap = new HashMap<>();
+        while (true) {
+            String line = readRawLine(input);
+            if (line == null || line.isEmpty()) {
+                // blank line -> done reading headers
+                break;
+            }
+            // parse "HeaderName: value"
+            int colonPos = line.indexOf(':');
+            if (colonPos > 0) {
+                String hdrName = line.substring(0, colonPos).trim();
+                String hdrValue = line.substring(colonPos + 1).trim();
+                headersMap.computeIfAbsent(hdrName, k -> new ArrayList<>()).add(hdrValue);
+            }
+        }
+
+        // 3) Figure out Content-Length
+        int contentLength = 0;
+        for (Map.Entry<String, List<String>> e : headersMap.entrySet()) {
+            if ("Content-Length".equalsIgnoreCase(e.getKey())) {
+                contentLength = Integer.parseInt(e.getValue().get(0));
+                break;
+            }
+        }
+
+        // 4) Read the body (raw bytes)
+        byte[] bodyBytes = new byte[0];
+        if (contentLength > 0) {
+            bodyBytes = new byte[contentLength];
+            int totalRead = 0;
+            while (totalRead < contentLength) {
+                int n = input.read(bodyBytes, totalRead, contentLength - totalRead);
+                if (n == -1) {
+                    // connection closed early
+                    throw new IOException("Unexpected end of stream: expected " +
+                            contentLength + " bytes, got " + totalRead);
+                }
+                totalRead += n;
+            }
+        }
+
+        // 5) Build your HttpRequest
+        // If it's text, you might do new String(bodyBytes, StandardCharsets.UTF_8)
+        String textBody = new String(bodyBytes, StandardCharsets.UTF_8);
+        return new HttpRequest.Builder()
+                .setMethod(method.toString())
+                .setPath(path)
+                .setHeaders(headersMap)
+                .setTextBody(textBody)
+                .setRawBody(bodyBytes)
+                .build();
 
     }
 
-    private Optional<List<String>> readMessage(InputStream inputStream) {
-        List<String> lines = new ArrayList<>();
-        try {
-            BufferedReader br = new BufferedReader(new InputStreamReader(inputStream));
-            String currentLine;
-            
-                while ((currentLine = br.readLine()) != null && !currentLine.isEmpty()) {
-                    lines.add(currentLine);
-                }
-
-                // add logic to read the body if Content-Length header is present
-                String contentLengthHeader = lines.stream()
-                        .filter(h -> h.toLowerCase().startsWith("content-length:"))
-                        .findFirst()
-                        .orElse(null);
-
-                if (contentLengthHeader != null) {
-                    int contentLength = Integer.parseInt(
-                            contentLengthHeader.split(":")[1].trim()
-                    );
-
-                    char[] body = new char[contentLength];
-                    int bytesRead = br.read(body, 0, contentLength);
-                    if(bytesRead != contentLength){
-                        throw new IOException("Undexpected stream end when reading body...");
-                    }
-                    lines.add(new String(body));
-                }
-
-                return Optional.of(lines);
-
-        } catch (Exception e) {
-            Logger.error("Error reading HTTP request", e);
-            return Optional.empty();
+    private String readRawLine(InputStream in) throws IOException {
+        ByteArrayOutputStream buf = new ByteArrayOutputStream();
+        int prev = -1;
+        while (true) {
+            int c = in.read();
+            if (c == -1) {
+                // EOF
+                break;
+            }
+            if (c == '\n') {
+                // If the previous was '\r', we have \r\n line ending
+                break;
+            }
+            if (c == '\r') {
+                // next might be \n, so we check but do not store \r
+                in.mark(1);
+                prev = c;
+                continue;
+            }
+            buf.write(c);
+            prev = c;
         }
-    }
-
-    private HttpRequest buildRequest(List<String> requestLines, InputStream input) throws IOException {
-        try {
-            String[] firstLine = requestLines.get(0).split(" "); //splits into METHOD, PATH, and http VERSION
-            System.out.println("First Line: " + requestLines.get(0));   //this is for debugging ===========================
-            if (firstLine.length != 3) {
-                Logger.error("Invalid request line: " + requestLines.get(0), null);
-                throw new IllegalArgumentException("Invalid first line");
-            }
-
-//            String method = firstLine[0].toUpperCase();
-            HttpMethod method = HttpMethod.fromString(firstLine[0]);
-            if (method == null) {
-                Logger.error("Unsupported HTTP method: " + firstLine[0], null);
-                throw new IllegalArgumentException("Unsupported HTTP method");
-            }
-
-            String path = firstLine[1];
-            String httpVersion = firstLine[2]; //not used with our httpRequest class, possible implementation in the future
-
-            Map<String, List<String>> headersAndValues = new HashMap<>(); //map for storing headers and assosciated values
-            int headerEndIndex = requestLines.size();
-
-            boolean hasBody = false;
-            for(int i = 1; i < requestLines.size(); i++){
-                String currentLine = requestLines.get(i);
-                if(currentLine.toLowerCase().startsWith("content-length:")){
-                    hasBody = true;
-                    headerEndIndex = i + 1;
-                    break;
-                }
-            }
-            
-            for (int i = 1; i < headerEndIndex; i++) {
-                String currentHeader = requestLines.get(i);
-                String[] headerComponents = currentHeader.split(":\\s*", 2);
-
-                if (headerComponents.length == 2) {
-                    String key = headerComponents[0].trim();
-                    String value = headerComponents[1].trim();
-
-                    if (!headersAndValues.containsKey(key)) {//check if the key already exists, then create a new list
-                        headersAndValues.put(key, new ArrayList<>());
-                    }
-                    headersAndValues.get(key).add(value);
-                } else {
-                    Logger.error("Malformed header: " + currentHeader, null);
-                    throw new IllegalArgumentException("Malformed header" + currentHeader);
-                }
-            }
-
-            System.out.println("Request Lines: ");
-            for (int i = 0; i < requestLines.size(); i++) {
-                System.out.println(i + ": " + requestLines.get(i));
-            }
-            System.out.println("Headers: " + headersAndValues);  // also for dubugging ================================
-
-
-            String body = "";
-            if (hasBody){
-                body = requestLines.get(requestLines.size()-1);
-            }
-
-            System.out.println("Method: " + method);
-            System.out.println("Path: " + path);
-            System.out.println("Headers: " + headersAndValues);
-            System.out.println("Body: " + body);
-
-            return new HttpRequest(method.toString(), path, headersAndValues, body);
-
-        } catch (Exception e) {
-            Logger.error("Error building HTTP request", e);
-            throw new IllegalArgumentException("Error building HTTP request");
-        }
+        return buf.toString("UTF-8");
     }
 }
+

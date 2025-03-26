@@ -115,7 +115,7 @@ public class RequestProcessor {
         }
         // 2. Validate HTTP method
         String method = request.getMethod();
-        if(!method.equals(("GET")) && !method.equals("POST") && !method.equals(("PUT")) && !method.equals("DELETE"))
+        if(!method.equals(("GET")) && !method.equals("POST") && !method.equals(("PUT")) && !method.equals("DELETE") && !method.equals("OPTIONS"))
         {
             return false;
         }
@@ -125,20 +125,20 @@ public class RequestProcessor {
             return false;
         }
         // 4. Check required headers for specific methods (e.g., Content-Length for POST)
-        if((method.equals("POST") || method.equals("PUT")) && !hasContentLengthHeader(request))
-        {
-            return false;
-        }
+//        if((method.equals("POST") || method.equals("PUT")) && !hasContentLengthHeader(request))
+//        {
+//            return false;
+//        }
         return true;
     }
 
     private boolean hasContentLengthHeader(HttpRequest request)
     {
         Map<String, List<String>> headers = request.getHeaders();
-        return headers.containsKey("Content Length") && !headers.get("Content Length").isEmpty();
+        return headers.containsKey("Content-Length") && !headers.get("Content-Length").isEmpty();
     }
 
     public interface RouteHandler {
-        HttpResponse handle(HttpRequest request);
+        HttpResponse handle(HttpRequest request) throws IOException;
     }
 }

@@ -22,6 +22,8 @@ dependencies {
     implementation("com.microsoft.azure:applicationinsights-core:2.6.4")
     implementation("com.azure:azure-core:1.40.0")
     implementation("com.azure:azure-storage-blob")
+    implementation("com.google.code.gson:gson:2.10")
+
 }
 
 // Apply a specific Java toolchain to ease working on different environments.
@@ -34,4 +36,10 @@ java {
 application {
     // Define the main class for the application.
     mainClass = "com.webserver.core.Server"
+}
+
+tasks.jar {
+    manifest {
+        attributes["Main-Class"] = application.mainClass.get()
+    }
 }
