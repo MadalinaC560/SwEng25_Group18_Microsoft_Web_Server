@@ -7,6 +7,8 @@ import java.util.Properties;
 
 import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadMXBean;
+import java.lang.management.OperatingSystemMXBean;
+import com.sun.management.UnixOperatingSystemMXBean;
 
 import com.microsoft.applicationinsights.TelemetryClient;
 import com.microsoft.applicationinsights.TelemetryConfiguration;
@@ -17,6 +19,9 @@ public class Telemetry{
     private static long numberRequests = 0;
     private static long previousCalcTime = System.currentTimeMillis();
     private static long numberFailures = 0;
+    private static long previousIOTime = System.currentTimeMillis();
+    private static long lastBytesRead = 0;
+    private static long lastBytesWritten = 0;
 
     static{
         TelemetryConfiguration configuration = TelemetryConfiguration.createDefault();
@@ -80,6 +85,8 @@ public class Telemetry{
             client.trackMetric("peakThreadNumber", beanThreadManagement.getPeakThreadCount());
             client.trackMetric("totalCreatedThreads", beanThreadManagement.getTotalStartedThreadCount());
 
+            trackIORates();
+
             client.flush();
         } catch (Exception e){
             System.err.println("There was an error when tracking the server metrics: " + e.getMessage());
@@ -131,6 +138,38 @@ public class Telemetry{
 
         } catch(Exception telemetryFailure){
             System.err.println("There was an error when tracking the failure" + telemetryFailure.getMessage());
+        }
+    }
+
+    public static void trackIORates(){
+        try {
+            OperatingSystemMXBean osManagementBean = ManagementFactory.getOperatingSystemMXBean();
+            if(osManagementBean instanceof UnixOperatingSystemMXBean){
+                UnixOperatingSystemMXBean unixBean = (UnixOperatingSystemMXBean) osManagementBean;
+
+                long currentTime = System.currentTimeMillis();
+                long timeElapsed = currentTime - previousIOTime;
+
+                //gather the current IO counts
+                long bytesRead = unixBean.getOpenFileDescriptorCount();
+                long bytesWritten = unixBean.getMaxFileDescriptorCount();
+
+                //calculates every second
+                if(timeElapsed >= 1000){
+                    double bytesReadRate = ((bytesRead - lastBytesRead) * 1000) / timeElapsed;
+                    double bytesWrittenRate = ((bytesWritten - lastBytesWritten) * 1000) / timeElapsed;
+
+                    client.trackMetric("inputRate", bytesReadRate);
+                    client.trackMetric("outputRate", bytesWrittenRate);
+
+                    lastBytesRead = bytesRead;
+                    lastBytesWritten = bytesWritten;
+                    previousIOTime = currentTime;
+                }
+            }
+            client.flush();
+        } catch (Exception e) {
+            System.err.println("Failed to track the IO rates: " + e.getMessage());
         }
     }
 
