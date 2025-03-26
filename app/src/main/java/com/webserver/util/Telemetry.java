@@ -16,6 +16,7 @@ public class Telemetry{
     private static final TelemetryClient client;
     private static long numberRequests = 0;
     private static long previousCalcTime = System.currentTimeMillis();
+    private static long numberFailures = 0;
 
     static{
         TelemetryConfiguration configuration = TelemetryConfiguration.createDefault();
@@ -112,6 +113,26 @@ public class Telemetry{
         }
     }
 
+    public static void trackFailures(Exception e, String path, String failureDetails){
+        try{
+            numberFailures++;
+            Map<String, String> failureProperties = new HashMap<>();
+            failureProperties.put("path", path);
+            failureProperties.put("details", failureDetails);
+            failureProperties.put("typeException", e.getClass().getName());
+
+            //tracks given exception
+            client.trackException(e, failureProperties, null);
+
+            //tracks the failure count
+            client.trackMetric("FailureCount", numberFailures);
+
+            client.flush();
+
+        } catch(Exception telemetryFailure){
+            System.err.println("There was an error when tracking the failure" + telemetryFailure.getMessage());
+        }
+    }
 
     public static void trackLogMetric(String level, String message){
         try {

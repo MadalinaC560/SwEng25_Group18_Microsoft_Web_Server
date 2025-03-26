@@ -230,11 +230,12 @@ public class ConnectionHandler implements Runnable {
 
     public void handle() {
         long startTime = System.currentTimeMillis(); //for our use, not the system
+        HttpRequest request = null;
         try {
             //Increment number of requests  in connection handler
             Telemetry.incrementNumberRequests();
             
-            HttpRequest request = parser.parse(clientSocket.getInputStream());
+            request = parser.parse(clientSocket.getInputStream());
             HttpResponse response = processor.process(request);
             response.write(clientSocket.getOutputStream());
 
@@ -244,6 +245,8 @@ public class ConnectionHandler implements Runnable {
             clientSocket.close();
         } catch (Exception e) {
             Logger.error("Error handling connection", e);
+            Telemetry.trackFailures(e, request != null ? request.getPath() : "unknown", 
+            "Failed to process request: " + e.getMessage());
         }
     }
 }
