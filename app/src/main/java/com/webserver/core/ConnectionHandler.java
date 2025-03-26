@@ -231,6 +231,9 @@ public class ConnectionHandler implements Runnable {
     public void handle() {
         long startTime = System.currentTimeMillis(); //for our use, not the system
         try {
+            //Increment number of requests  in connection handler
+            Telemetry.incrementNumberRequests();
+            
             HttpRequest request = parser.parse(clientSocket.getInputStream());
             HttpResponse response = processor.process(request);
             response.write(clientSocket.getOutputStream());

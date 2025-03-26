@@ -14,6 +14,8 @@ import com.microsoft.applicationinsights.telemetry.SeverityLevel;
 
 public class Telemetry{
     private static final TelemetryClient client;
+    private static long numberRequests = 0;
+    private static long previousCalcTime = System.currentTimeMillis();
 
     static{
         TelemetryConfiguration configuration = TelemetryConfiguration.createDefault();
@@ -48,11 +50,28 @@ public class Telemetry{
         }
     }
 
+    public static void incrementNumberRequests(){
+        numberRequests++;
+    }
+
     public static void trackServerMetrics(long startingTime){
         trackResponseTime(startingTime);
 
         try{
-            
+
+            long currentSystemTime = System.currentTimeMillis();
+            long elapsedTime = currentSystemTime - previousCalcTime;
+
+            //calculate if a minimum of 1 second have passed
+            if(elapsedTime >= 1000){
+                //converts number of requests to requests per second
+                double rateOfRequests = (numberRequests * 1000) / elapsedTime;
+                client.trackMetric("requestsPerSecond", rateOfRequests);
+
+                numberRequests = 0;
+                previousCalcTime = currentSystemTime;
+            }
+
             //this gets the management bean
             ThreadMXBean beanThreadManagement = ManagementFactory.getThreadMXBean();
 
@@ -60,18 +79,12 @@ public class Telemetry{
             client.trackMetric("peakThreadNumber", beanThreadManagement.getPeakThreadCount());
             client.trackMetric("totalCreatedThreads", beanThreadManagement.getTotalStartedThreadCount());
 
-
-
-
-
+            client.flush();
         } catch (Exception e){
             System.err.println("There was an error when tracking the server metrics: " + e.getMessage());
         }
-        
-
-        
-
     }
+    
 
     //this is for the actual users, assuming we are taking user ID's and served files as input and plotted to hashmap.
     public static void trackFileMetrics(String appID){
