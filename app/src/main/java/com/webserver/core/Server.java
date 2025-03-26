@@ -7,6 +7,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import com.webserver.util.Logger;
 import com.webserver.util.ConfigLoader;
+import com.webserver.util.Telemetry;
 
 public class Server {
     private final ServerSocket serverSocket;
@@ -31,6 +32,22 @@ public class Server {
     public void start() {
         Runtime.getRuntime().addShutdownHook(new Thread(this::stop));
         Logger.info("Server started on port " + config.getPort());
+        //thread that tracks server metrics with handled interruption 
+        Thread metricsThread = new Thread(() -> {
+            while(running){
+                Telemetry.trackServerMetrics(System.currentTimeMillis());
+                try {
+                    //tracks the threads every 30 seconds
+                    Thread.sleep(30000); 
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    break;
+                }
+
+            }
+        });
+        metricsThread.setDaemon(true);
+        metricsThread.start();
 
         while(running) {
             try {
@@ -55,6 +72,8 @@ public class Server {
         running = false;
         threadPool.shutdown();
         try {
+            //flushes remaining metrics before the server shuts down 
+            Telemetry.trackServerMetrics(System.currentTimeMillis());
             serverSocket.close();
         } catch (IOException e) {
             Logger.error("Error closing server socket", e);

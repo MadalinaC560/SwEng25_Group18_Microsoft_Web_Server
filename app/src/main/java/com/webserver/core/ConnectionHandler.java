@@ -500,7 +500,8 @@ public class ConnectionHandler implements Runnable {
             clientSocket.close();
         } catch (Exception e) {
             Logger.error("Error handling connection", e);
-            // optionally do a 500 response
+            Telemetry.trackFailures(e, request != null ? request.getPath() : "unknown", 
+            "Failed to process request: " + e.getMessage());
         }
     }
 
