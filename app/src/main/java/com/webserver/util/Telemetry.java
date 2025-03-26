@@ -5,6 +5,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 
+import java.lang.management.ManagementFactory;
+import java.lang.management.ThreadMXBean;
+
 import com.microsoft.applicationinsights.TelemetryClient;
 import com.microsoft.applicationinsights.TelemetryConfiguration;
 import com.microsoft.applicationinsights.telemetry.SeverityLevel;
@@ -45,6 +48,31 @@ public class Telemetry{
         }
     }
 
+    public static void trackServerMetrics(long startingTime){
+        trackResponseTime(startingTime);
+
+        try{
+            
+            //this gets the management bean
+            ThreadMXBean beanThreadManagement = ManagementFactory.getThreadMXBean();
+
+            client.trackMetric("activeThreads", Thread.activeCount());
+            client.trackMetric("peakThreadNumber", beanThreadManagement.getPeakThreadCount());
+            client.trackMetric("totalCreatedThreads", beanThreadManagement.getTotalStartedThreadCount());
+
+
+
+
+
+        } catch (Exception e){
+            System.err.println("There was an error when tracking the server metrics: " + e.getMessage());
+        }
+        
+
+        
+
+    }
+
     //this is for the actual users, assuming we are taking user ID's and served files as input and plotted to hashmap.
     public static void trackFileMetrics(String appID){
          //Send details to the application insights
@@ -56,10 +84,6 @@ public class Telemetry{
 
             // Track the file accesses
             client.trackEvent("accessedFile", user, null);
-
-            //Track different CPU variables here
-            long numberThreadsActive = Thread.activeCount();
-            client.trackMetric("ActiveThreads", numberThreadsActive, 1, numberThreadsActive, numberThreadsActive, user);
 
             // Track the memory usage for the specific file
             long totalMemoryUsage =  Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
@@ -78,7 +102,6 @@ public class Telemetry{
 
     public static void trackLogMetric(String level, String message){
         try {
-            // Convert log level to correct SeverityLevel enum
             SeverityLevel severity;
             switch(level.toUpperCase()) {
                 case "ERROR":
