@@ -1,19 +1,25 @@
 
 package com.webserver.core;
 
-import com.webserver.azure.AzureBlobInterface;
-import com.webserver.http.HttpParser;
-import com.webserver.http.RequestProcessor;
-import com.webserver.model.HttpRequest;
-import com.webserver.model.HttpResponse;
-import com.webserver.util.*;
-
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+
+import com.webserver.azure.AzureBlobInterface;
+import com.webserver.http.HttpParser;
+import com.webserver.http.RequestProcessor;
+import com.webserver.model.HttpRequest;
+import com.webserver.model.HttpResponse;
+import com.webserver.util.AppManager;
+import com.webserver.util.ConfigLoader;
+import com.webserver.util.DB;
+import com.webserver.util.FileService;
+import com.webserver.util.Logger;
+import com.webserver.util.MimeTypes;
+import com.webserver.util.Telemetry;
 
 public class ConnectionHandler implements Runnable {
 
@@ -489,10 +495,13 @@ public class ConnectionHandler implements Runnable {
 
     public void handle() {
         long startTime = System.currentTimeMillis();
+        HttpRequest request = null;
         try {
             // Instead of old parser, use new RawHttpParser
-            HttpRequest request = new HttpParser().parse(clientSocket.getInputStream());
+            request = new HttpParser().parse(clientSocket.getInputStream());
 
+            Telemetry.incrementNumberRequests();
+            request = parser.parse(clientSocket.getInputStream());
             HttpResponse response = processor.process(request);
             response.write(clientSocket.getOutputStream());
 
