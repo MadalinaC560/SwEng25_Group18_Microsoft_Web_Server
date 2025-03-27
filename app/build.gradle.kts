@@ -23,6 +23,7 @@ dependencies {
     implementation("com.azure:azure-core:1.40.0")
     implementation("com.azure:azure-storage-blob")
     implementation("com.google.code.gson:gson:2.10")
+    implementation ("io.github.cdimascio:dotenv-java:3.0.0")
 
 }
 

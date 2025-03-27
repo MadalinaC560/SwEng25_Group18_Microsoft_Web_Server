@@ -7,6 +7,8 @@ build
 # Ignore IntelliJ files
 .idea
 
+.env
+
 webserver.log
 
 .metadata

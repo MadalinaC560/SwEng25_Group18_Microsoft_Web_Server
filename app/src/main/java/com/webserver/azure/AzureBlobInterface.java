@@ -13,12 +13,13 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.zip.*;
+import io.github.cdimascio.dotenv.Dotenv;
+
 
 public class AzureBlobInterface {
 
-    private static final String CONNECTION_STRING = System.getenv(
-        "AZURE_STORAGE_CONNECTION_STRING"
-    );
+    private static final Dotenv dotenv = Dotenv.load(); // loads .env from project root
+    private static final String CONNECTION_STRING = dotenv.get("AZURE_STORAGE_CONNECTION_STRING");
     private static final String CONTAINER_NAME = "userfiles";
 
     private final BlobServiceClient blobServiceClient;
