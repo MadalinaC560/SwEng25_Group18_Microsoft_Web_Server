@@ -5,7 +5,7 @@ import java.io.IOException;
 import java.util.Properties;
 
 public class ConfigLoader {
-    private static final String CONFIG_FILE = "server.properties";
+    private static final String CONFIG_FILE = "app/server.properties";
     private final Properties properties;
 
     public ConfigLoader() {

@@ -14,21 +14,16 @@ public class FileService {
         this.webRoot = webRoot;
     }
 
-    public byte[] readFile(String path) throws IOException {
-        // TODO: Implement secure file reading
-        // 1. Validate and sanitize the path
-        // 2. Prevent directory traversal attacks
-        Path resolvedPath = resolvePath(path);
-        if (!isValidPath(resolvedPath.toString()))
+    public byte[] readFile(String requestPath) throws IOException {
+        Path resolvedPath = resolvePath(requestPath);
+        if (!isValidPath(resolvedPath))
         {
-                throw new IOException("Not a valid path" + path);
+            throw new IOException("Not a valid path" + requestPath);
         }
-        // 4. Handle file not found and access errors
         File file = new File(resolvedPath.toString());
         if (!file.exists() || !file.isFile()) {
-            throw new IOException("File not found" + path);
+            throw new IOException("File not found" + requestPath);
         }
-        // 3. Read and return file contents
         FileInputStream fileInputStream = new FileInputStream(file);
         byte [] fileBytes = new byte[(int)file.length()];
         try
@@ -43,49 +38,43 @@ public class FileService {
         return fileBytes;
     }
 
-    public boolean isValidPath(String path) {
-        // TODO: Implement path validation
-        try{
-            Path resolvedPath = resolvePath(path);
+    public boolean isValidPath(Path path) {
+        try {
+            // Check for . or .. in the string
+            String absoluteString = path.toString();
+            if (absoluteString.contains("..") || absoluteString.contains("./") || absoluteString.contains("/.")) {
+                return false;
+            }
+
+            // Must start with webroot
             Path webRootPath = Paths.get(webRoot).toAbsolutePath().normalize();
-            // 1. Check for directory traversal attempts
-            String resolvedPathString = resolvedPath.toString();
-            if (resolvedPathString.contains("..") || resolvedPathString.contains("./") || resolvedPathString.contains("/.")) {
+            if (!path.startsWith(webRootPath)) {
                 return false;
             }
-            // 2. Verify path is within webRoot
-            if (!resolvedPath.startsWith(webRootPath)){
+
+            // Must exist, be a file, and be readable
+            if (!Files.exists(path) || !Files.isRegularFile(path) || !Files.isReadable(path)) {
                 return false;
             }
-            // 3. Check file exists and is readable
-            if (!Files.exists(resolvedPath) ||
-                    !Files.isRegularFile(resolvedPath) ||
-                    !Files.isReadable(resolvedPath)) {
-                return false;
-            }
+
             return true;
-        }
-        catch (SecurityException | InvalidPathException e )
-        {
+        } catch (SecurityException | InvalidPathException e) {
             return false;
         }
     }
 
+
     private Path resolvePath(String requestPath) {
-        // TODO: Implement path resolution
-        // 1. Convert request path to filesystem path
-        //Remove forward slashes at the start of the string
         requestPath = requestPath.replaceAll("^/+", "");
 
-        // 2. Handle default files (e.g., index.html)
-        //Set default index file if no path requested
+        //TODO - Bug to fix, if we get .../index.html/ - dir is assumed, which is wrong
         if (requestPath.isEmpty() || requestPath.endsWith("/"))
         {
             requestPath += "index.html";
         }
-        // 3. Resolve relative to webRoot
         Path webRootPath = Paths.get(webRoot).toAbsolutePath();
         Path resolvedPath = webRootPath.resolve(requestPath).normalize();
+        System.out.println("This is the resolved Path" + resolvedPath);
         return resolvedPath;
     }
     public static String getFileExtension(String scriptPath) {

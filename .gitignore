@@ -7,13 +7,30 @@ build
 # Ignore IntelliJ files
 .idea
 
+.env
+
 webserver.log
 
 .metadata
 
 .DS_Store
 
-./node_modules
-
 /node_modules
 
+cloudle_ui/node_modules
+
+.vscode/
+
+out/
+
+buildSrc
+
+app/bin
+
+.project
+
+.settings
+
+app/downloaded_files
+
+app/.classpath
