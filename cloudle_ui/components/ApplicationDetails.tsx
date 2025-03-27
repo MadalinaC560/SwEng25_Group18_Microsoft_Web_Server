@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback} from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -71,26 +71,26 @@ export const ApplicationDetails: React.FC<ApplicationDetailsProps> = ({ appId, o
   const { toast } = useToast();
   const { metrics, simulateLoad } = useRealTimeMetrics(appId, appData.status === 'running');
 
-  let userId = 1
+  const userId = 3
 
   // Initial data fetch
-  useEffect(() => {
-    const fetchInitialData = async () => {
-      setIsLoading(true);
-      setError(null);
-      try {
-        const appDataResponse = await api.fetchApplicationData(userId, appId);
-        setAppData(appDataResponse);
-      } catch (error) {
-        setError('Failed to load application data. Please try again later.');
-        console.error('Error loading initial data:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
+  const fetchInitialData = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const appDataResponse = await api.fetchApplicationData(userId, appId);
+      setAppData(appDataResponse);
+    } catch (err) {
+      setError("Failed to load application data. Please try again later.");
+      console.error("Error loading initial data:", err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [userId, appId]);
 
+  useEffect(() => {
     fetchInitialData();
-  }, [appId]);
+  }, [fetchInitialData]);
 
   const handleToggleStatus = async () => {
     try {

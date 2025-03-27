@@ -1,7 +1,21 @@
 
 import { ApplicationData, RealTimeMetrics } from "@/components/types";
 
-const API_BASE_URL = 'http://localhost:8080/api'; // Replace with your actual API base URL
+// Example interface matching your server's JSON
+interface ServerAppData {
+  appId: number;
+  name: string;
+  status: string; // The server returns a generic string.
+  url?: string;
+  runtime?: string;
+  environment?: string;
+  sslStatus?: string;
+  autoScaling?: string;
+  version?: string;
+  lastDeployment?: string;
+}
+
+const API_BASE_URL = 'http://localhost:8080/api';
 
 export const api = {
   // NEW version: fetch data for a single app by calling ?userId=...,
@@ -12,26 +26,29 @@ export const api = {
       const response = await fetch(`${API_BASE_URL}/applications?userId=${userId}`, {
         method: 'GET',
         headers: {
-          'Accept': 'application/json'
-        }
+          Accept: 'application/json',
+        },
       });
       if (!response.ok) {
         throw new Error(`Failed to fetch apps for userId=${userId}; status=${response.status}`);
       }
 
-      // 2) We get an array of apps from the server
-      const apps = await response.json();
+      const apps: ServerAppData[] = await response.json();
 
       // 3) Find the specific app
-      const found = apps.find((app: any) => app.appId === appId);
+      const found = apps.find((app) => app.appId === appId);
+
       if (!found) {
         throw new Error(`No app with appId=${appId} for userId=${userId}`);
       }
 
+      // Convert server's status (string) to a literal type "running" | "stopped"
+      const status = found.status === 'running' ? 'running' : 'stopped';
+
       // 4) Return an object shaped the way ApplicationDetails.tsx expects
       return {
         name: found.name || '',
-        status: found.status || 'stopped',
+        status, // now typed as "running" | "stopped"
         url: found.url || '',
         runtime: found.runtime || '',
         environment: found.environment || '',
@@ -43,7 +60,7 @@ export const api = {
 
     } catch (error) {
       console.error('Error fetching application data:', error);
-      // Fallback: return a blank default object
+      // Fallback: blank default object
       return {
         name: '',
         status: 'stopped',
@@ -74,15 +91,16 @@ export const api = {
           time: `${i}:00`,
           responseTime: 0,
           requests: 0,
-          errors: 0
-        }))
+          errors: 0,
+        })),
       };
     }
   },
 
   async toggleApplicationStatus(appId: number, newStatus: 'running' | 'stopped'): Promise<void> {
+    const userId = 3
     try {
-      const response = await fetch(`${API_BASE_URL}/applications/${appId}/status`, {
+      const response = await fetch(`${API_BASE_URL}/applications/status?userId=${userId}&appId=${appId}&status=${newStatus}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -110,6 +128,5 @@ export const api = {
       console.error('Error deploying new version:', error);
       throw error;
     }
-  }
+  },
 };
-

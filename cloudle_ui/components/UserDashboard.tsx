@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { RefreshCw } from "lucide-react";
 import { Card, CardContent, CardTitle, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -28,15 +28,26 @@ import {
   Terminal,
   Power,
   Upload,
-  ExternalLink
-} from 'lucide-react';
+  ExternalLink,
+} from "lucide-react";
 
 import { useToast } from "@/hooks/use-toast";
 
+// The interface for the apps your server sends back from /api/applications:
+interface ServerApp {
+  appId: number;
+  userId: number;  // The server includes userId as well
+  name: string;
+  status: string;  // The server’s status is just a string
+  runtime: string;
+  routes?: string[];
+}
+
+// Your local interface for the displayed apps:
 interface Application {
   id: number;
   name: string;
-  status: 'running' | 'stopped';
+  status: "running" | "stopped";  // Strict literal type
   runtime: string;
   ssl: boolean;
   url?: string;
@@ -52,68 +63,70 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({ onAppClick }) => {
   const [apps, setApps] = useState<Application[]>([]);
   const [isNewAppDialogOpen, setIsNewAppDialogOpen] = useState(false);
   const [newApp, setNewApp] = useState({
-    name: '',
-    runtime: '',
-    file: null as File | null
+    name: "",
+    runtime: "",
+    file: null as File | null,
   });
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
-  // For demonstration, we assume userId=1
-  const userId = 1;
+  // For demonstration, we assume userId = 3
+  const userId = 3;
 
-  // 1. Fetch Apps
-  useEffect(() => {
-    fetchApps();
-  }, []);
-
-// 1. Example: robustly handling errors in the client
-  const fetchApps = async () => {
+  // 1. Example: robustly handling errors in the client
+  const fetchApps = useCallback(async () => {
     try {
-      // If your server is truly at localhost:8080
-      const response = await fetch(`http://localhost:8080/api/applications?userId=${userId}`, {
-        method: 'GET',
-        headers: {
-          // If you need JSON, add Accept or other relevant headers
-          'Accept': 'application/json',
-        },
-      });
+      const response = await fetch(
+          `http://localhost:8080/api/applications?userId=${userId}`,
+          {
+            method: "GET",
+            headers: {
+              Accept: "application/json",
+            },
+          }
+      );
 
       if (!response.ok) {
         // The server responded, but not with a 2xx code
         throw new Error(`Server replied with HTTP ${response.status}`);
       }
 
-      const data = await response.json();
-      // Transform the data into your Application[] if needed
-      setApps(data.map((item: any) => ({
+      // We'll get an array of ServerApp objects:
+      const data: ServerApp[] = await response.json();
+
+      // Transform them into our local Application interface
+      const transformed: Application[] = data.map((item) => ({
         id: item.appId,
         name: item.name,
-        status: item.status,
+        // Convert the server status to a strict literal "running" or "stopped"
+        status: item.status === "running" ? "running" : "stopped",
         runtime: item.runtime,
         ssl: false,
         url: undefined,
-        routes: item.routes || []
-      })));
+        routes: item.routes || [],
+      }));
 
+      setApps(transformed);
     } catch (error) {
-      // This gets called if fetch threw (e.g. network error, server down, or above “throw new Error(…)”)
-      console.error('Error fetching apps:', error);
+      console.error("Error fetching apps:", error);
       toast({
         title: "Error",
         description: String(error),
-        variant: "destructive"
+        variant: "destructive",
       });
     }
-  };
+  }, [userId, toast]);
 
+  useEffect(() => {
+    fetchApps();
+  }, [fetchApps]);
 
   // 2. Handling File selection
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      setNewApp(prev => ({ ...prev, file }));
+      setNewApp((prev) => ({ ...prev, file }));
     }
   };
 
@@ -128,7 +141,7 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({ onAppClick }) => {
 
     const file = event.dataTransfer.files?.[0];
     if (file) {
-      setNewApp(prev => ({ ...prev, file }));
+      setNewApp((prev) => ({ ...prev, file }));
     }
   };
 
@@ -139,15 +152,15 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({ onAppClick }) => {
         toast({
           title: "Error",
           description: "Please fill in all required fields",
-          variant: "destructive"
+          variant: "destructive",
         });
         return;
       }
 
       // Create the application
-      const resp = await fetch('http://localhost:8080/api/applications', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const resp = await fetch("http://localhost:8080/api/applications", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           userId,
           name: newApp.name,
@@ -155,36 +168,38 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({ onAppClick }) => {
         }),
       });
       if (!resp.ok) {
-        throw new Error('Failed to create application');
+        throw new Error("Failed to create application");
       }
       const appData = await resp.json();
 
       // If file is selected, upload it
       if (newApp.file) {
         const formData = new FormData();
-        formData.append('file', newApp.file);
+        formData.append("file", newApp.file);
 
         const uploadUrl = `http://localhost:8080/api/applications/upload?userId=${userId}&appId=${appData.appId}`;
         const uploadResp = await fetch(uploadUrl, {
-          method: 'POST',
+          method: "POST",
           body: formData,
         });
         if (!uploadResp.ok) {
-          throw new Error('Failed to upload file');
+          throw new Error("Failed to upload file");
         }
       }
 
       setIsNewAppDialogOpen(false);
-      setNewApp({ name: '', runtime: '', file: null });
-      toast({ title: "Success", description: "Application created successfully" });
+      setNewApp({ name: "", runtime: "", file: null });
+      toast({
+        title: "Success",
+        description: "Application created successfully",
+      });
       await fetchApps();
-
     } catch (error) {
-      console.error('Error creating app:', error);
+      console.error("Error creating app:", error);
       toast({
         title: "Error",
         description: "Failed to create application. Please try again.",
-        variant: "destructive"
+        variant: "destructive",
       });
     }
   };
@@ -192,60 +207,59 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({ onAppClick }) => {
   // 4. Toggling App Status
   const toggleAppStatus = async (appId: number, currentStatus: string) => {
     try {
-      const newStatus = currentStatus === 'running' ? 'stopped' : 'running';
+      const newStatus = currentStatus === "running" ? "stopped" : "running";
       const response = await fetch(
           `http://localhost:8080/api/applications/status?userId=${userId}&appId=${appId}&status=${newStatus}`,
-          { method: 'PUT' }
+          { method: "PUT" }
       );
       if (!response.ok) {
-        throw new Error('Failed to update status');
+        throw new Error("Failed to update status");
       }
 
       toast({
         title: "Success",
-        description: `Application ${newStatus === 'running' ? 'started' : 'stopped'} successfully`,
+        description: `Application ${
+            newStatus === "running" ? "started" : "stopped"
+        } successfully`,
       });
       fetchApps();
-
     } catch (error) {
-      console.error('Error toggling status:', error);
+      console.error("Error toggling status:", error);
       toast({
         title: "Error",
         description: "Failed to update application status",
-        variant: "destructive"
+        variant: "destructive",
       });
     }
   };
 
   const getStatusBadgeVariant = (status: string) => {
-    return status === 'running' ? 'default' : 'secondary';
+    return status === "running" ? "default" : "secondary";
   };
+
   // function to handle refresh
   const handleRefresh = async () => {
     try {
       // This calls your /api/refresh route, which forces the server to DB.load()
-      await fetch('http://localhost:8080/api/refresh', {
-        method: 'POST',
+      await fetch("http://localhost:8080/api/refresh", {
+        method: "POST",
       });
 
       // Then re-fetch the apps so the UI sees the updated data
       await fetchApps();
-
     } catch (error) {
-      console.error('Error refreshing DB:', error);
+      console.error("Error refreshing DB:", error);
       toast({
         title: "Error",
         description: String(error),
-        variant: "destructive"
+        variant: "destructive",
       });
     }
   };
 
-
-  return(
+  return (
       <div className="min-h-screen bg-gray-50 p-6">
         <div className="max-w-7xl mx-auto space-y-6">
-
           {/* Header with "Refresh" and "New Application" buttons */}
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-2">
@@ -256,7 +270,10 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({ onAppClick }) => {
               <h1 className="text-3xl font-bold">My Web Applications</h1>
             </div>
 
-            <Dialog open={isNewAppDialogOpen} onOpenChange={setIsNewAppDialogOpen}>
+            <Dialog
+                open={isNewAppDialogOpen}
+                onOpenChange={setIsNewAppDialogOpen}
+            >
               <DialogTrigger asChild>
                 <Button>
                   <Plus className="h-4 w-4 mr-2" />
@@ -273,7 +290,9 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({ onAppClick }) => {
                     <Input
                         placeholder="my-awesome-app"
                         value={newApp.name}
-                        onChange={(e) => setNewApp(prev => ({ ...prev, name: e.target.value }))}
+                        onChange={(e) =>
+                            setNewApp((prev) => ({ ...prev, name: e.target.value }))
+                        }
                     />
                   </div>
 
@@ -281,7 +300,9 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({ onAppClick }) => {
                     <Label>Runtime Environment</Label>
                     <Select
                         value={newApp.runtime}
-                        onValueChange={(value) => setNewApp(prev => ({ ...prev, runtime: value }))}
+                        onValueChange={(value) =>
+                            setNewApp((prev) => ({ ...prev, runtime: value }))
+                        }
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Select runtime" />
@@ -317,7 +338,8 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({ onAppClick }) => {
                       ) : (
                           <>
                             <p className="text-sm text-gray-500">
-                              Drag and drop your application files here, or click to browse
+                              Drag and drop your application files here, or click to
+                              browse
                             </p>
                             <p className="text-xs text-gray-400 mt-2">
                               Supported files: .html, .zip, .py
@@ -348,16 +370,14 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({ onAppClick }) => {
 
           {/* Application List */}
           <div className="grid gap-4">
-            {apps.map(app => (
+            {apps.map((app) => (
                 <Card
                     key={app.id}
                     className="cursor-pointer hover:shadow-lg transition-shadow"
-                    // If you have a details page or want to show more info:
                     onClick={() => onAppClick?.(app.id)}
                 >
                   <CardContent className="p-6">
                     <div className="flex items-center justify-between">
-
                       <div className="space-y-1">
                         <div className="flex items-center gap-2">
                           <h2 className="text-xl font-semibold">{app.name}</h2>
@@ -367,14 +387,14 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({ onAppClick }) => {
                         </div>
                         <div className="text-sm text-gray-500 space-x-4">
                           <span>Runtime: {app.runtime}</span>
-                          <span>SSL: {app.ssl ? 'Enabled' : 'Disabled'}</span>
+                          <span>SSL: {app.ssl ? "Enabled" : "Disabled"}</span>
                           {app.url && (
                               <Button
                                   variant="link"
                                   className="p-0 h-auto text-sm"
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    window.open(app.url, '_blank');
+                                    window.open(app.url, "_blank");
                                   }}
                               >
                                 <ExternalLink className="h-4 w-4 mr-1" />
@@ -399,7 +419,7 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({ onAppClick }) => {
                           Logs
                         </Button>
                         <Button
-                            variant={app.status === 'running' ? 'destructive' : 'default'}
+                            variant={app.status === "running" ? "destructive" : "default"}
                             size="sm"
                             onClick={(e) => {
                               e.stopPropagation();
@@ -407,10 +427,9 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({ onAppClick }) => {
                             }}
                         >
                           <Power className="h-4 w-4 mr-2" />
-                          {app.status === 'running' ? 'Stop' : 'Start'}
+                          {app.status === "running" ? "Stop" : "Start"}
                         </Button>
                       </div>
-
                     </div>
                   </CardContent>
                 </Card>
@@ -425,37 +444,54 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({ onAppClick }) => {
             <CardContent>
               <div className="space-y-4">
                 <div className="flex items-start gap-4">
-                  <div className="flex-none w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-blue-600">1</div>
+                  <div className="flex-none w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-blue-600">
+                    1
+                  </div>
                   <div>
                     <h3 className="font-medium">Prepare your application</h3>
-                    <p className="text-sm text-gray-500">Create your application files (HTML, Node, etc.) and ensure they work locally.</p>
+                    <p className="text-sm text-gray-500">
+                      Create your application files (HTML, Node, etc.) and ensure
+                      they work locally.
+                    </p>
                   </div>
                 </div>
                 <div className="flex items-start gap-4">
-                  <div className="flex-none w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-blue-600">2</div>
+                  <div className="flex-none w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-blue-600">
+                    2
+                  </div>
                   <div>
                     <h3 className="font-medium">Upload your files</h3>
-                    <p className="text-sm text-gray-500">Use our interface to deploy your files to Azure.</p>
+                    <p className="text-sm text-gray-500">
+                      Use our interface to deploy your files to Azure.
+                    </p>
                   </div>
                 </div>
                 <div className="flex items-start gap-4">
-                  <div className="flex-none w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-blue-600">3</div>
+                  <div className="flex-none w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-blue-600">
+                    3
+                  </div>
                   <div>
                     <h3 className="font-medium">Configure runtime</h3>
-                    <p className="text-sm text-gray-500">Select your app’s runtime environment and version if needed.</p>
+                    <p className="text-sm text-gray-500">
+                      Select your app’s runtime environment and version if needed.
+                    </p>
                   </div>
                 </div>
                 <div className="flex items-start gap-4">
-                  <div className="flex-none w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-blue-600">4</div>
+                  <div className="flex-none w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-blue-600">
+                    4
+                  </div>
                   <div>
                     <h3 className="font-medium">Deploy and start</h3>
-                    <p className="text-sm text-gray-500">Deploy your application, then click “Start” once you’re ready to go live.</p>
+                    <p className="text-sm text-gray-500">
+                      Deploy your application, then click “Start” once you’re
+                      ready to go live.
+                    </p>
                   </div>
                 </div>
               </div>
             </CardContent>
           </Card>
-
         </div>
       </div>
   );
