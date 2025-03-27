@@ -10,7 +10,6 @@ import java.nio.file.Paths;
 public abstract class ScriptProcessor {
 
     public abstract String processScript(String filePath) throws Exception;
-
     public String readResponse(HttpURLConnection conn) throws IOException {
         try (BufferedReader reader = new BufferedReader(
                 new InputStreamReader(conn.getInputStream(), StandardCharsets.UTF_8))) {
