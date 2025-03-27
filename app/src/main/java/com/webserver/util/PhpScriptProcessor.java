@@ -13,7 +13,9 @@ public class PhpScriptProcessor extends ScriptProcessor {
 
     @Override
     public String processScript(String filepath) throws Exception {
+        //Read the contents of the PHP file
         String phpCode = readFile(filepath);
+        //Construct a JSON with the PHP code
         String jsonInput = "{\"code\": \"" + phpCode.replace("\"", "\\\"") + "\"}";
 
         URL url = new URL(API_URL);
@@ -24,12 +26,12 @@ public class PhpScriptProcessor extends ScriptProcessor {
         conn.setRequestProperty("Content-Type", "application/json; utf-8");
         conn.setDoOutput(true);
 
-        // Send the request body
+        // Send the request body by writing the JSON payload
         try (OutputStream os = conn.getOutputStream()) {
             byte[] input = jsonInput.getBytes("utf-8");
             os.write(input, 0, input.length);
         }
-        //Read the response
+        //Read and return the response from the API
         //Should be a json of the processed script
         return readResponse(conn);
     }
