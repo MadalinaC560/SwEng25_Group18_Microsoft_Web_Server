@@ -10,28 +10,67 @@ public class FileService {
         this.webRoot = webRoot;
     }
 
-    public byte[] readFile(String path) throws IOException {
-        // TODO: Implement secure file reading
-        // 1. Validate and sanitize the path
-        // 2. Prevent directory traversal attacks
-        // 3. Read and return file contents
-        // 4. Handle file not found and access errors
-        return null;
+    public byte[] readFile(String requestPath) throws IOException {
+        Path resolvedPath = resolvePath(requestPath);
+        if (!isValidPath(resolvedPath))
+        {
+                throw new IOException("Not a valid path" + requestPath);
+        }
+        File file = new File(resolvedPath.toString());
+        if (!file.exists() || !file.isFile()) {
+            throw new IOException("File not found" + requestPath);
+        }
+        FileInputStream fileInputStream = new FileInputStream(file);
+        byte [] fileBytes = new byte[(int)file.length()];
+        try
+        {
+            fileInputStream.read(fileBytes);
+            fileInputStream.close();
+        }
+        catch (IOException e)
+        {
+            throw e;
+        }
+        return fileBytes;
     }
 
-    public boolean isValidPath(String path) {
-        // TODO: Implement path validation
-        // 1. Check for directory traversal attempts
-        // 2. Verify path is within webRoot
-        // 3. Check file exists and is readable
-        return false;
+    public boolean isValidPath(Path path) {
+        try {
+            // Check for . or .. in the string
+            String absoluteString = path.toString();
+            if (absoluteString.contains("..") || absoluteString.contains("./") || absoluteString.contains("/.")) {
+                return false;
+            }
+
+            // Must start with webroot
+            Path webRootPath = Paths.get(webRoot).toAbsolutePath().normalize();
+            if (!path.startsWith(webRootPath)) {
+                return false;
+            }
+
+            // Must exist, be a file, and be readable
+            if (!Files.exists(path) || !Files.isRegularFile(path) || !Files.isReadable(path)) {
+                return false;
+            }
+
+            return true;
+        } catch (SecurityException | InvalidPathException e) {
+            return false;
+        }
     }
+
 
     private Path resolvePath(String requestPath) {
-        // TODO: Implement path resolution
-        // 1. Convert request path to filesystem path
-        // 2. Handle default files (e.g., index.html)
-        // 3. Resolve relative to webRoot
-        return null;
+        requestPath = requestPath.replaceAll("^/+", "");
+
+        //TODO - Bug to fix, if we get .../index.html/ - dir is assumed, which is wrong
+        if (requestPath.isEmpty() || requestPath.endsWith("/"))
+        {
+            requestPath += "index.html";
+        }
+        Path webRootPath = Paths.get(webRoot).toAbsolutePath();
+        Path resolvedPath = webRootPath.resolve(requestPath).normalize();
+        System.out.println("This is the resolved Path" + resolvedPath);
+        return resolvedPath;
     }
 }

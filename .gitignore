@@ -7,6 +7,8 @@ build
 # Ignore IntelliJ files
 .idea
 
+.env
+
 webserver.log
 
 .metadata
@@ -15,8 +17,20 @@ webserver.log
 
 /node_modules
 
-.venv
-*.venv
-/venv
-# Ignore placeholder web server uploads
-placeholder_web_server/uploads
+cloudle_ui/node_modules
+
+.vscode/
+
+out/
+
+buildSrc
+
+app/bin
+
+.project
+
+.settings
+
+app/downloaded_files
+
+app/.classpath
