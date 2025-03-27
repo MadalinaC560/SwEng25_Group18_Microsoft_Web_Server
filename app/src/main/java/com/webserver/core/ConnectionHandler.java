@@ -501,7 +501,8 @@ public class ConnectionHandler implements Runnable {
             request = new HttpParser().parse(clientSocket.getInputStream());
 
             Telemetry.incrementNumberRequests();
-            request = parser.parse(clientSocket.getInputStream());
+            // no need to re-initalise request and reparse input stream
+//            request = parser.parse(clientSocket.getInputStream());
             HttpResponse response = processor.process(request);
             response.write(clientSocket.getOutputStream());
 
