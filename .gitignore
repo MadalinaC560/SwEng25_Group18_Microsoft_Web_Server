@@ -15,8 +15,6 @@ webserver.log
 
 .DS_Store
 
-./node_modules
-
 /node_modules
 
 cloudle_ui/node_modules

@@ -1,6 +1,6 @@
 package com.webserver.model;
 
-import java.io.IOException;
+import com.webserver.http.ResponseBuilder;
 import java.io.OutputStream;
 import java.util.HashMap;
 import java.util.List;

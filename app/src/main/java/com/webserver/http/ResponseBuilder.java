@@ -11,6 +11,8 @@ import java.util.List;
 import java.util.Map;
 
 import com.webserver.model.HttpResponse;
+import java.io.*;
+import java.util.*;
 
 public class ResponseBuilder {
     private static final Map<Integer, String> STATUS_PHRASES = new HashMap<>();
@@ -18,52 +20,6 @@ public class ResponseBuilder {
     static {
         // TODO: Initialize common HTTP status codes and phrases
         // Add mappings for 2xx, 3xx, 4xx, and 5xx status codes
-        
-        //Informational status codes(1xx)
-        STATUS_PHRASES.put(100, "Continue");
-        STATUS_PHRASES.put(101, "Switching Protocols");
-        STATUS_PHRASES.put(102, "Processing");
-
-        //Successful status codes(2xx)
-        STATUS_PHRASES.put(200, "OK");
-        STATUS_PHRASES.put(201, "Created");
-        STATUS_PHRASES.put(202, "Accepted");
-        STATUS_PHRASES.put(203, "Non-authoritative Information");
-        STATUS_PHRASES.put(204, "No Content");
-        STATUS_PHRASES.put(205, "Reset Content");
-        STATUS_PHRASES.put(206, "Partial Content");
-
-        //Redirection status codes(3xx)
-        STATUS_PHRASES.put(300, "Multiple Choices");
-        STATUS_PHRASES.put(301, "Moved Permanently");
-        STATUS_PHRASES.put(302, "Found");
-        STATUS_PHRASES.put(303, "See Other");
-        STATUS_PHRASES.put(304, "Not Modified");
-        STATUS_PHRASES.put(305, "Use Proxy");
-
-        //Client error status codes(4xx)
-        STATUS_PHRASES.put(400, "Bad Request");
-        STATUS_PHRASES.put(401, "Unauthorised");
-        STATUS_PHRASES.put(402, "Payment Required");
-        STATUS_PHRASES.put(403, "Forbidden");
-        STATUS_PHRASES.put(404, "Not Found");
-        STATUS_PHRASES.put(405, "Method Not Allowed");
-        STATUS_PHRASES.put(406, "Not Acceptable");
-        STATUS_PHRASES.put(407, "Proxy Authentication Required");
-        STATUS_PHRASES.put(408, "Request Timeout");
-        STATUS_PHRASES.put(409, "Conflict");
-        STATUS_PHRASES.put(410, "Gone");
-
-        //Server error status codes(5xx)
-        STATUS_PHRASES.put(500, "Internal Server Error");
-        STATUS_PHRASES.put(501, "Not Implemented");
-        STATUS_PHRASES.put(502, "Bad Gateway");
-        STATUS_PHRASES.put(503, "Service Unavailable");
-        STATUS_PHRASES.put(504, "Gateway Timeout");
-        STATUS_PHRASES.put(505, "HTTP Version Not Supported");
-        STATUS_PHRASES.put(508, "Loop Detected");
-        STATUS_PHRASES.put(511, "Network Authentication Required");
-
     }
 
     public static void write(OutputStream output, HttpResponse response) throws IOException {
