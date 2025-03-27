@@ -50,7 +50,7 @@ public class Telemetry{
         try {
             client.trackMetric("ResponseTime", duration);
             client.flush();
-            
+
         } catch (Exception e) {
             System.err.println("There was an error when tracking response time." + e.getMessage());
         }
@@ -92,14 +92,14 @@ public class Telemetry{
             System.err.println("There was an error when tracking the server metrics: " + e.getMessage());
         }
     }
-    
+
 
     //this is for the actual users, assuming we are taking user ID's and served files as input and plotted to hashmap.
     public static void trackFileMetrics(String appID){
-         //Send details to the application insights
+        //Send details to the application insights
         try {
 
-             //Hashmap to filter metrics by filename (add more to hashmap to differentiate user files)
+            //Hashmap to filter metrics by filename (add more to hashmap to differentiate user files)
             Map<String, String> user  = new HashMap<>();
             user.put("appID", appID);
 
@@ -189,11 +189,11 @@ public class Telemetry{
                 default:
                     severity = SeverityLevel.Verbose;
             }
-    
+
             client.trackTrace(message, severity);
             client.flush();
-    } catch (Exception e) {
-        System.err.println("Failed to track log metric: " + e.getMessage());
-    }
+        } catch (Exception e) {
+            System.err.println("Failed to track log metric: " + e.getMessage());
+        }
     }
 }

@@ -118,27 +118,5 @@ public class HttpParser {
         }
         return buf.toString("UTF-8");
     }
-
-    private String readBody(InputStream input, int bodyLength) throws IOException{
-        if(bodyLength == 0){
-            return "";
-        }
-
-        byte[] bytesOfBody = new byte[bodyLength];
-        int bytesReadTracker = 0;
-
-        while(bytesReadTracker < bodyLength){ //while loop ensures the entire InputStream is read, as it may not have everything available at one time
-            int bytesRead = input.read(bytesOfBody, bytesReadTracker, bodyLength - bytesReadTracker);
-
-            if(bytesRead == -1){
-                throw new IOException("Unexpected end when reading body, check for errors");
-            }
-
-            bytesReadTracker += bytesRead;
-        }
-
-
-        return new String(bytesOfBody);
-    }
 }
 

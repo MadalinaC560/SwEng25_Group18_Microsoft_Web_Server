@@ -23,8 +23,17 @@ public class RequestProcessor {
     public void addRoute(String path, RouteHandler handler) {
         // TODO: Implement route registration
         // 1. Validate the path format
+        if(path == null || path.isEmpty() || !path.startsWith("/"))
+        {
+            throw new IllegalArgumentException("Invalid route path: Must start with '/' and cannot be empty.");
+        }
         // 2. Handle duplicate routes
+        if(routes.containsKey(path))
+        {
+            throw new IllegalArgumentException("Route Already Exists: " + path);
+        }
         // 3. Store the route handler
+        routes.put(path, handler);
     }
 
     public HttpResponse process(HttpRequest request) {
@@ -89,17 +98,21 @@ public class RequestProcessor {
         if (statusCode == 404) {
             body = "Error 404: Not Found";
         }
-    return new HttpResponse.Builder()
-            .setStatusCode(statusCode)
-            .setStatusMessage(message)
-            .addHeader("Content-Type", "text/plain")
-            .setBody(body)
-            .build();
+        return new HttpResponse.Builder()
+                .setStatusCode(statusCode)
+                .setStatusMessage(message)
+                .addHeader("Content-Type", "text/plain")
+                .setBody(body)
+                .build();
     }
 
     private boolean isValidRequest(HttpRequest request) {
         // TODO: Implement request validation
         // 1. Check for null request or required fields
+        if(request == null || request.getMethod() == null || request.getPath() == null)
+        {
+            return false;
+        }
         // 2. Validate HTTP method
         String method = request.getMethod();
         if(!method.equals(("GET")) && !method.equals("POST") && !method.equals(("PUT")) && !method.equals("DELETE") && !method.equals("OPTIONS"))
@@ -107,6 +120,10 @@ public class RequestProcessor {
             return false;
         }
         // 3. Validate path format
+        if(!request.getPath().startsWith("/"))
+        {
+            return false;
+        }
         // 4. Check required headers for specific methods (e.g., Content-Length for POST)
 //        if((method.equals("POST") || method.equals("PUT")) && !hasContentLengthHeader(request))
 //        {

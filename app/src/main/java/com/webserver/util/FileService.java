@@ -1,7 +1,11 @@
 package com.webserver.util;
-
+import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.io.FileInputStream;
 
 public class FileService {
     private final String webRoot;
@@ -14,7 +18,7 @@ public class FileService {
         Path resolvedPath = resolvePath(requestPath);
         if (!isValidPath(resolvedPath))
         {
-                throw new IOException("Not a valid path" + requestPath);
+            throw new IOException("Not a valid path" + requestPath);
         }
         File file = new File(resolvedPath.toString());
         if (!file.exists() || !file.isFile()) {
