@@ -18,7 +18,7 @@ export default function Home() {
     const checkAuth = () => {
       const hasAuth = localStorage.getItem('isAuthenticated');
       if (!hasAuth) {
-        router.push('/login');
+        router.push('/landing');
       } else {
         setIsAuthenticated(true);
       }
@@ -29,7 +29,7 @@ export default function Home() {
 
   const handleLogout = () => {
     localStorage.removeItem('isAuthenticated');
-    router.push('/login');
+    router.push('/landing');
   };
 
   const handleAppClick = (appId: number) => {
