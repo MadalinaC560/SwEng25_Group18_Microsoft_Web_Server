@@ -10,6 +10,7 @@ import java.nio.file.Paths;
 public abstract class ScriptProcessor {
 
     public abstract String processScript(String filePath) throws Exception;
+
     public String readResponse(HttpURLConnection conn) throws IOException {
         try (BufferedReader reader = new BufferedReader(
                 new InputStreamReader(conn.getInputStream(), StandardCharsets.UTF_8))) {
@@ -22,8 +23,26 @@ public abstract class ScriptProcessor {
             return response.toString();
         }
     }
+    //Appropriately formats a JSON input for the API
+    public String createJSONInput(String code)
+    {
+        String codeForJSON =  code.replace("\\", "\\\\")
+                .replace("\"", "\\\"")
+                .replace("\b", "\\b")
+                .replace("\f", "\\f")
+                .replace("\n", "\\n")
+                .replace("\r", "\\r")
+                .replace("\t", "\\t");
 
-    protected String readFile(String filePath) throws IOException {
-        return new String(Files.readAllBytes(Paths.get(filePath)), StandardCharsets.UTF_8);
+        return "{\"code\": \"" + codeForJSON  + "\"}";
+    }
+
+    protected String readFile(String filePath)  {
+        try{
+            return new String(Files.readAllBytes(Paths.get(filePath)), StandardCharsets.UTF_8);
+        }
+        catch (IOException e){
+            return null;
+        }
     }
 }
