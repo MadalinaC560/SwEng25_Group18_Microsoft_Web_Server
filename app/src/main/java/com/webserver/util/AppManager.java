@@ -1,75 +1,98 @@
 package com.webserver.util;
 
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.Optional;
+import java.util.stream.Collectors;
 
 public class AppManager {
+
     private static final AtomicInteger APP_ID_GENERATOR = new AtomicInteger(1000);
 
-    public static DB.User findUserById(int userId) {
+    public static DB.App createApp(int tenantId, int ownerUserId, String name, String runtime) {
+        // 1) Validate that the tenant exists
+        DB.Tenant tenant = findTenantById(tenantId);
+        if (tenant == null) {
+            System.err.println("Tenant " + tenantId + " not found.");
+            return null;
+        }
+
+        // 2) Validate that the user exists (and belongs to that tenant)
+        DB.User user = findUserById(ownerUserId);
+        if (user == null || user.tenantId != tenantId) {
+            System.err.println("User " + ownerUserId + " not found (or doesn't match tenant).");
+            return null;
+        }
+
+        // 3) Create the new App
+        DB.App newApp = new DB.App();
+        newApp.appId = APP_ID_GENERATOR.getAndIncrement();
+        newApp.tenantId = tenantId;
+        newApp.ownerUserId = ownerUserId;
+        newApp.name = name;
+        newApp.runtime = runtime;
+        newApp.status = "stopped";
+        newApp.routes = new java.util.ArrayList<>();
+
+        // 4) Add it to DB
+        DB.getRoot().apps.add(newApp);
+        DB.save();
+
+        return newApp;
+    }
+
+    public static List<DB.App> getAppsForTenant(int tenantId) {
+        return DB.getRoot().apps.stream()
+                .filter(app -> app.tenantId == tenantId)
+                .collect(Collectors.toList());
+    }
+
+    public static DB.App findAppById(int appId) {
+        return DB.getRoot().apps.stream()
+                .filter(a -> a.appId == appId)
+                .findFirst()
+                .orElse(null);
+    }
+
+    public static boolean updateAppStatus(int appId, String newStatus) {
+        DB.App theApp = findAppById(appId);
+        if (theApp == null) {
+            return false;
+        }
+        theApp.status = newStatus;
+        DB.save();
+        return true;
+    }
+
+    public static void addRoute(int appId, String newRoute) {
+        DB.App theApp = findAppById(appId);
+        if (theApp != null) {
+            theApp.routes.add(newRoute);
+            DB.save();
+        }
+    }
+
+    public static boolean deleteApp(int appId) {
+        List<DB.App> apps = DB.getRoot().apps;
+        DB.App toRemove = findAppById(appId);
+        if (toRemove != null) {
+            apps.remove(toRemove);
+            DB.save();
+            return true;
+        }
+        return false;
+    }
+
+    private static DB.Tenant findTenantById(int tenantId) {
+        return DB.getRoot().tenants.stream()
+                .filter(t -> t.tenantId == tenantId)
+                .findFirst()
+                .orElse(null);
+    }
+
+    private static DB.User findUserById(int userId) {
         return DB.getRoot().users.stream()
                 .filter(u -> u.userId == userId)
                 .findFirst()
                 .orElse(null);
     }
-
-    public static DB.App createApp(int userId, String name, String runtime) {
-        DB.User user = findUserById(userId);
-        if (user == null) return null;
-
-        DB.App app = new DB.App();
-        app.appId = APP_ID_GENERATOR.getAndIncrement();
-        app.name = name;
-        app.runtime = runtime;
-        app.status = "stopped";
-        app.routes = new java.util.ArrayList<>();
-
-        user.apps.add(app);
-        DB.save();
-        return app;
-    }
-
-    public static void addRoute(int userId, int appId, String newRoute) {
-        DB.User user = findUserById(userId);
-        if (user == null) return;
-        DB.App theApp = user.apps.stream()
-                .filter(a -> a.appId == appId)
-                .findFirst().orElse(null);
-        if (theApp == null) return;
-
-        theApp.routes.add(newRoute);
-        DB.save();
-    }
-
-    public static java.util.List<DB.App> getUserApps(int userId) {
-        DB.User user = findUserById(userId);
-        if (user == null) return java.util.Collections.emptyList();
-        return user.apps;
-    }
-
-    public static boolean updateAppStatus(int userId, int appId, String statusParam) {
-        // 1) Find the user
-        DB.User user = findUserById(userId);
-        if (user == null) {
-            return false;
-        }
-
-        // 2) Find the specific app
-        for (DB.App app : user.apps) {
-            if (app.appId == appId) {
-                // 3) Update the status
-                app.status = statusParam;
-
-                // 4) Save changes to db.json
-                DB.save();
-
-                return true;
-            }
-        }
-        // If we never found that appId, return false
-        return false;
-    }
-
-
-    // etc.
 }

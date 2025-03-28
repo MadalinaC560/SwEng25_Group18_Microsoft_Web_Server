@@ -36,48 +36,65 @@ public class RequestProcessor {
         routes.put(path, handler);
     }
 
+    // in RequestProcessor.java
+    public boolean hasRoute(String path) {
+        return routes.containsKey(path);
+    }
+
+
     public HttpResponse process(HttpRequest request) {
-        // Validate request
-        if(!isValidRequest(request)) {
+        if (!isValidRequest(request)) {
             Logger.error("Invalid request received", null);
             return createErrorResponse(400, "Bad Request");
         }
 
-        String path = request.getBasePath();
+        String path = request.getBasePath();  // e.g. "/api/tenants/101"
+
+        if ("GET".equalsIgnoreCase(request.getMethod()) && path.endsWith("/")) {
+            // e.g. "/app_4002/" -> redirect to "/app_4002/index.html"
+
+            // Build a 302 response with a "Location" header.
+            return new HttpResponse.Builder()
+                    .setStatusCode(302)  // 302 Found (temporary redirect)
+                    .addHeader("Location", path + "index.html")
+                    .build();
+        }
+
+        // 1) First try exact route
         RouteHandler handler = routes.get(path);
 
-        // If no route is defined for this path:
+        // 2) If no exact match, check if it starts with "/api/tenants"
+        //    and we already have a route for "/api/tenants"
+        if (handler == null && path.startsWith("/api/tenants")) {
+            handler = routes.get("/api/tenants");
+        }
+
         if (handler == null) {
             Logger.info("No handler found for path: " + path);
 
-            // For GET requests, attempt static file serving:
+
+
+            // Attempt static file if GET
             if ("GET".equalsIgnoreCase(request.getMethod())) {
                 try {
-                    // read the file from disk
                     byte[] fileBytes = fileService.readFile(path);
-                    // determine mime type
                     String mimeType = MimeTypes.getMimeType(path);
-
-                    // Return a 200 with the file content in rawBody
                     return new HttpResponse.Builder()
                             .setStatusCode(200)
                             .setStatusMessage("OK")
                             .addHeader("Content-Type", mimeType)
                             .setRawBody(fileBytes)
                             .build();
-
                 } catch (IOException e) {
-                    // file not found, or invalid, etc. -> 404
                     Logger.error("Error serving static file: " + path, e);
                     return createErrorResponse(404, "Not Found");
                 }
             } else {
-                // Not a GET -> no route found
                 return createErrorResponse(404, "Not Found");
             }
         }
 
-        // Otherwise, invoke the matching route handler
+        // If we found a handler, call it
         try {
             HttpResponse response = handler.handle(request);
             if (response == null) {
@@ -90,8 +107,6 @@ public class RequestProcessor {
             return createErrorResponse(500, "Internal Server Error");
         }
     }
-
-
     private HttpResponse createErrorResponse(int statusCode, String message) {
         // If 404, the test specifically wants "Error 404: Not Found"
         String body = message;
