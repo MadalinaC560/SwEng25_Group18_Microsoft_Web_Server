@@ -12,7 +12,8 @@ public abstract class ScriptProcessor {
     public abstract String processScript(String filePath) throws Exception;
 
     public String readResponse(HttpURLConnection conn) throws IOException {
-        try (BufferedReader reader = new BufferedReader(
+        try (BufferedReader reader = new BufferedReader( conn.getResponseCode() >= 400 ?
+                new InputStreamReader(conn.getErrorStream(), StandardCharsets.UTF_8):
                 new InputStreamReader(conn.getInputStream(), StandardCharsets.UTF_8))) {
 
             StringBuilder response = new StringBuilder();
@@ -20,6 +21,7 @@ public abstract class ScriptProcessor {
             while ((line = reader.readLine()) != null) {
                 response.append(line.trim());
             }
+            System.out.print(response.toString());
             return response.toString();
         }
     }
