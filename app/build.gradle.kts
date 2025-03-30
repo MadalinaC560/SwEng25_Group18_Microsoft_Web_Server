@@ -12,6 +12,7 @@ repositories {
     mavenCentral()
 }
 
+
 dependencies {
 
     testImplementation("org.junit.jupiter:junit-jupiter:5.9.3")
@@ -26,6 +27,7 @@ dependencies {
     implementation ("io.github.cdimascio:dotenv-java:3.0.0")
 
 }
+
 
 // Apply a specific Java toolchain to ease working on different environments.
 java {
@@ -43,4 +45,7 @@ tasks.jar {
     manifest {
         attributes["Main-Class"] = application.mainClass.get()
     }
+}
+tasks.test {
+    useJUnitPlatform()
 }
