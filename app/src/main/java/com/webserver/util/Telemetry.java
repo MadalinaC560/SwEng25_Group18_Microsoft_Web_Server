@@ -1,18 +1,18 @@
 package com.webserver.util;
 
+import java.io.File;
 import java.io.IOException;
+import java.lang.management.ManagementFactory;
+import java.lang.management.OperatingSystemMXBean;
+import java.lang.management.ThreadMXBean;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 
-import java.lang.management.ManagementFactory;
-import java.lang.management.ThreadMXBean;
-import java.lang.management.OperatingSystemMXBean;
-import com.sun.management.UnixOperatingSystemMXBean;
-
 import com.microsoft.applicationinsights.TelemetryClient;
 import com.microsoft.applicationinsights.TelemetryConfiguration;
 import com.microsoft.applicationinsights.telemetry.SeverityLevel;
+import com.sun.management.UnixOperatingSystemMXBean;
 
 public class Telemetry{
     private static final TelemetryClient client;
@@ -62,6 +62,7 @@ public class Telemetry{
 
     public static void trackServerMetrics(long startingTime){
         trackResponseTime(startingTime);
+        trackDiskUsage();
 
         try{
 
@@ -170,6 +171,33 @@ public class Telemetry{
             client.flush();
         } catch (Exception e) {
             System.err.println("Failed to track the IO rates: " + e.getMessage());
+        }
+    }
+
+    public static void trackDiskUsage(){
+        try{
+            File[] roots = File.listRoots();
+
+            for(File root:roots){
+                long totalSpace = root.getTotalSpace();
+                long spaceUsable = root.getUsableSpace();
+                long spaceUsed = totalSpace - spaceUsable;
+
+                //convert the values to gigabutes, better for readability
+                double totalGB = totalSpace / (1024.0 * 1024.0 * 1024.0);
+                double usedGB = spaceUsed/ (1024.0 * 1024.0 * 1024.0);
+                double freeGB = spaceUsable / (1024.0 * 1024.0 * 1024.0);
+
+                client.trackMetric("TotalGB", totalGB );
+                client.trackMetric("UsedGB", usedGB);
+                client.trackMetric("FreeGB", freeGB);
+            }
+            
+            client.flush();
+
+        }
+        catch(Exception e){
+            System.err.println("There was an error when tracking disk usage: " + e.getMessage());
         }
     }
 
