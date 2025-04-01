@@ -59,7 +59,7 @@ export default function Home() {
             <ApplicationDetails 
               appId={selectedAppId} 
               onBack={handleBack}
-            />
+             tenantId={101}/> //hardcoded tenant for now
           ) : (
             <UserDashboard 
               onAppClick={handleAppClick}
