@@ -5,7 +5,7 @@ import concurrent.futures
 
 def make_request(i):
     try:
-        response = requests.get('http://localhost:5002')
+        response = requests.get('http://localhost:8080')
         return response.status_code == 200
     except Exception as e:
         print(f"Request {i} failed: {str(e)}")

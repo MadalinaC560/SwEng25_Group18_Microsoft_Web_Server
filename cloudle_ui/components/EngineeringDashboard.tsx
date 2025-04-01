@@ -1,779 +1,317 @@
 
-'use client';
+"use client";
 
-import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import React, { useState, useEffect } from "react";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { 
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Badge } from "@/components/ui/badge";
 import {
   RefreshCw,
-  AlertCircle,
-  Server,
-  Database,
+  Activity,
   Cpu,
   HardDrive,
-  Activity,
-  DollarSign,
-  Network,
-  Users,
+  AlertCircle,
   Clock,
-  TrendingUp,
-} from 'lucide-react';
-import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, AreaChart, Area } from 'recharts';
-import { useToast } from "@/hooks/use-toast";
+  Server,
+} from "lucide-react";
+import {
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  CartesianGrid,
+  XAxis,
+  YAxis,
+  Tooltip,
+  Legend,
+  BarChart,
+  Bar,
+} from "recharts";
 
-// Mock data for platform metrics
-const generatePlatformData = () => {
-  return Array.from({ length: 24 }, (_, i) => ({
-    time: `${i}:00`,
-    totalUsers: Math.floor(Math.random() * 1000) + 500,
-    activeApps: Math.floor(Math.random() * 100) + 50,
-    serverLoad: Math.floor(Math.random() * 40) + 20,
-    responseTime: Math.floor(Math.random() * 100) + 50,
-    connections: Math.floor(Math.random() * 300) + 200,
-    errorRate: (Math.random() * 1.5).toFixed(2)
-  }));
-};
+// Define interfaces for type safety
+interface PlatformMetrics {
+  systemLoad: number;
+  avgResponseTime: number;
+  errorRate: number;
+  cpuUtilization: number;
+  memoryUsage: number;
+  performanceData: {
+    time: string;
+    serverLoad: number;
+    responseTime: number;
+    errorRate: number;
+  }[];
+}
 
-// Mock data for critical alerts
-const criticalAlerts = [
-  {
-    timestamp: '2024-02-18 15:23:45',
-    component: 'Load Balancer',
-    severity: 'High',
-    message: 'High latency detected in EU-West region',
-    status: 'Active'
-  },
-  {
-    timestamp: '2024-02-18 15:20:30',
-    component: 'Database Cluster',
-    severity: 'Medium',
-    message: 'Replication lag increased to 15s',
-    status: 'Investigating'
-  },
-  {
-    timestamp: '2024-02-18 14:45:12',
-    component: 'Web Server Node3',
-    severity: 'High',
-    message: 'Memory usage over 92%, potential leak',
-    status: 'Active'
-  },
-  {
-    timestamp: '2024-02-18 14:10:05',
-    component: 'SSL Certificate',
-    severity: 'Medium',
-    message: 'Certificate expires in 15 days for 12 domains',
-    status: 'Scheduled'
-  }
-];
+interface TenantUsage {
+  tenantName: string;
+  apps: number;
+  cpu: number;
+  memory: number;
+}
 
-// Mock data for tenant resource usage
-const tenantUsageData = [
-  { name: 'Tenant A', servers: 12, cpu: 18, memory: 24, storage: 156, cost: 2345 },
-  { name: 'Tenant B', servers: 8, cpu: 12, memory: 16, storage: 92, cost: 1568 },
-  { name: 'Tenant C', servers: 15, cpu: 22, memory: 30, storage: 240, cost: 3102 },
-  { name: 'Tenant D', servers: 5, cpu: 7, memory: 10, storage: 64, cost: 945 },
-  { name: 'Tenant E', servers: 9, cpu: 14, memory: 18, storage: 108, cost: 1734 },
-  { name: 'Tenant F', servers: 3, cpu: 4, memory: 6, storage: 32, cost: 587 }
-];
+// Dummy API call functions; replace with your actual API calls.
+async function fetchPlatformMetrics(): Promise<PlatformMetrics> {
+  const res = await fetch("http://localhost:8080/api/metrics");
+  if (!res.ok) throw new Error("Failed to fetch metrics");
+  return await res.json();
+}
 
-// Mock data for CPU and Memory history
-const generateResourceHistory = () => {
-  const data = [];
-  const now = new Date();
-  
-  for (let i = 30; i >= 0; i--) {
-    const date = new Date(now);
-    date.setDate(date.getDate() - i);
-    const dateStr = date.toISOString().split('T')[0];
-    
-    data.push({
-      date: dateStr,
-      cpu: Math.floor(Math.random() * 30) + 40,
-      memory: Math.floor(Math.random() * 25) + 50,
-      network: Math.floor(Math.random() * 40) + 30
-    });
-  }
-  
-  return data;
-};
+async function fetchTenantUsage(): Promise<TenantUsage[]> {
+  // Replace with a real API call when available.
+  return [
+    { tenantName: "Tenant A", apps: 12, cpu: 24, memory: 64 },
+    { tenantName: "Tenant B", apps: 5, cpu: 12, memory: 32 },
+    { tenantName: "Tenant C", apps: 7, cpu: 15, memory: 48 },
+  ];
+}
 
-const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8'];
-
-// Mock data for resource allocation
-const resourceAllocation = {
-  total: {
-    cpu: 384, // 384 cores
-    memory: 1536, // 1.5 TB
-    storage: 8192, // 8 TB
-    bandwidth: 20480 // 20 TB
-  },
-  used: {
-    cpu: 218,
-    memory: 984,
-    storage: 5734,
-    bandwidth: 14336
-  }
-};
-
-export const EngineeringDashboard = () => {
-  const [activeTab, setActiveTab] = useState('overview');
-  const [timeRange, setTimeRange] = useState('24h');
+export function EngineeringDashboard() {
+  const [activeTab, setActiveTab] = useState("platform");
   const [refreshing, setRefreshing] = useState(false);
-  const [platformData, setPlatformData] = useState(generatePlatformData());
-  const [resourceHistory] = useState(generateResourceHistory());
-  const { toast } = useToast();
+  const [platformMetrics, setPlatformMetrics] = useState<PlatformMetrics | null>(null);
+  const [tenantUsage, setTenantUsage] = useState<TenantUsage[]>([]);
 
-  const handleRefresh = () => {
+  const handleRefresh = async () => {
     setRefreshing(true);
-    setTimeout(() => {
-      setPlatformData(generatePlatformData());
+    try {
+      const metrics = await fetchPlatformMetrics();
+      setPlatformMetrics(metrics);
+      const tenants = await fetchTenantUsage();
+      setTenantUsage(tenants);
+    } catch (error) {
+      console.error("Error refreshing dashboard data:", error);
+    } finally {
       setRefreshing(false);
-      toast({
-        title: "Dashboard Refreshed",
-        description: "All metrics updated successfully",
-      });
-    }, 1000);
+    }
   };
 
+  // Fetch data on mount
+  useEffect(() => {
+    handleRefresh();
+  }, []);
+
+  // While loading metrics, show a loading indicator.
+  if (!platformMetrics) {
+    return (
+        <div className="min-h-screen bg-gray-100 p-6 flex items-center justify-center">
+          <p>Loading metrics...</p>
+        </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-gray-100 p-6">
-      <div className="max-w-7xl mx-auto space-y-6">
-        {/* Header */}
-        <div className="bg-white rounded-lg shadow p-4 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <h1 className="text-2xl font-bold">Cloudle Engineering Dashboard</h1>
-          </div>
-          <div className="flex items-center gap-4">
-            <Select 
-              defaultValue={timeRange}
-              onValueChange={setTimeRange}
-            >
-              <SelectTrigger className="w-40">
-                <SelectValue placeholder="Time Range" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="24h">Last 24h</SelectItem>
-                <SelectItem value="7d">Last 7 days</SelectItem>
-                <SelectItem value="30d">Last 30 days</SelectItem>
-              </SelectContent>
-            </Select>
+      <div className="min-h-screen bg-gray-100 p-6">
+        <div className="max-w-7xl mx-auto space-y-6">
+          {/* Dashboard Header */}
+          <div className="bg-white rounded-lg shadow p-4 flex items-center justify-between">
+            <h1 className="text-2xl font-bold">Engineering Dashboard</h1>
             <Button size="icon" onClick={handleRefresh} disabled={refreshing}>
-              <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+              <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
             </Button>
           </div>
-        </div>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid grid-cols-3 mb-4">
-            <TabsTrigger value="overview">System Overview</TabsTrigger>
-            <TabsTrigger value="servers">Server Infrastructure</TabsTrigger>
-            <TabsTrigger value="tenants">Multi-Tenant Management</TabsTrigger>
-          </TabsList>
+          <Tabs value={activeTab} onValueChange={setActiveTab}>
+            <TabsList className="grid grid-cols-2 mb-4">
+              <TabsTrigger value="platform">Platform Metrics</TabsTrigger>
+              <TabsTrigger value="tenants">Multi-Tenant</TabsTrigger>
+            </TabsList>
 
-          {/* OVERVIEW TAB */}
-          <TabsContent value="overview" className="space-y-6">
-            {/* Platform Status Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium">Server Health</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-center gap-2">
-                    <div className="h-2 w-2 bg-green-500 rounded-full"></div>
-                    <div className="text-2xl font-bold text-green-600">Healthy</div>
-                  </div>
-                  <p className="text-xs text-muted-foreground">All systems operational</p>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium">Active Servers</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-center gap-2">
-                    <Server className="h-5 w-5 text-blue-500" />
-                    <div className="text-2xl font-bold">24/26</div>
-                  </div>
-                  <p className="text-xs text-muted-foreground">2 in maintenance</p>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium">Average Response Time</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-center gap-2">
-                    <Clock className="h-5 w-5 text-indigo-500" />
-                    <div className="text-2xl font-bold">76ms</div>
-                  </div>
-                  <p className="text-xs text-muted-foreground">Across all regions</p>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium">System Load</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-center gap-2">
-                    <Activity className="h-5 w-5 text-amber-500" />
-                    <div className="text-2xl font-bold">42%</div>
-                  </div>
-                  <p className="text-xs text-muted-foreground">Average across servers</p>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Platform Metrics Graph */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Infrastructure Performance</CardTitle>
-                <CardDescription>System-wide metrics for web server platform</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="h-80">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={platformData}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="time" />
-                      <YAxis />
-                      <Tooltip />
-                      <Legend />
-                      <Line 
-                        type="monotone" 
-                        dataKey="serverLoad" 
-                        name="CPU Load (%)" 
-                        stroke="#f59e0b" 
-                        activeDot={{ r: 8 }}
-                      />
-                      <Line 
-                        type="monotone" 
-                        dataKey="responseTime" 
-                        name="Response Time (ms)" 
-                        stroke="#8884d8" 
-                      />
-                      <Line 
-                        type="monotone" 
-                        dataKey="connections" 
-                        name="Active Connections" 
-                        stroke="#82ca9d" 
-                      />
-                      <Line 
-                        type="monotone" 
-                        dataKey="errorRate" 
-                        name="Error Rate (%)" 
-                        stroke="#ff0000" 
-                      />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </div>
-              </CardContent>
-            </Card>
-
-
-            {/* Critical Alerts */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Critical Alerts</CardTitle>
-                <CardDescription>Active issues requiring attention</CardDescription>
-                <div className="flex gap-4 mt-4">
-                  <Input placeholder="Search alerts..." className="max-w-sm" />
-                  <Select defaultValue="all">
-                    <SelectTrigger className="w-40">
-                      <SelectValue placeholder="Severity" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Severities</SelectItem>
-                      <SelectItem value="high">High</SelectItem>
-                      <SelectItem value="medium">Medium</SelectItem>
-                      <SelectItem value="low">Low</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Timestamp</TableHead>
-                      <TableHead>Component</TableHead>
-                      <TableHead>Severity</TableHead>
-                      <TableHead>Message</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {criticalAlerts.map((alert, index) => (
-                      <TableRow key={index}>
-                        <TableCell>{alert.timestamp}</TableCell>
-                        <TableCell>{alert.component}</TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <AlertCircle className={`h-4 w-4 ${
-                              alert.severity === 'High' ? 'text-red-500' : 
-                              alert.severity === 'Medium' ? 'text-amber-500' : 'text-blue-500'
-                            }`} />
-                            {alert.severity}
-                          </div>
-                        </TableCell>
-                        <TableCell>{alert.message}</TableCell>
-                        <TableCell>
-                          <Badge variant={
-                            alert.status === 'Active' ? 'destructive' :
-                            alert.status === 'Investigating' ? 'default' : 'outline'
-                          }>
-                            {alert.status}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Button variant="ghost" size="sm">Investigate</Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* SERVERS TAB */}
-          <TabsContent value="servers" className="space-y-6">
-            {/* Resource Usage Summary */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium">CPU Utilization</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-center gap-2">
-                    <Cpu className="h-5 w-5 text-blue-500" />
-                    <div className="text-2xl font-bold">
-                      {Math.round((resourceAllocation.used.cpu / resourceAllocation.total.cpu) * 100)}%
+            {/* PLATFORM METRICS TAB */}
+            <TabsContent value="platform" className="space-y-6">
+              {/* Quick Stats Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium">Active Servers</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex items-center gap-2">
+                      <Server className="h-5 w-5 text-blue-500" />
+                      <div className="text-2xl font-bold">24/26</div>
                     </div>
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    {resourceAllocation.used.cpu} of {resourceAllocation.total.cpu} cores
-                  </p>
-                  <div className="w-full h-2 bg-gray-200 rounded-full mt-2">
-                    <div 
-                      className="h-2 bg-blue-500 rounded-full" 
-                      style={{ width: `${(resourceAllocation.used.cpu / resourceAllocation.total.cpu) * 100}%` }}
-                    ></div>
-                  </div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium">Memory Usage</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-center gap-2">
-                    <HardDrive className="h-5 w-5 text-purple-500" />
-                    <div className="text-2xl font-bold">
-                      {Math.round((resourceAllocation.used.memory / resourceAllocation.total.memory) * 100)}%
+                    <p className="text-xs text-muted-foreground">2 in maintenance</p>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium">System Load</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex items-center gap-2">
+                      <Activity className="h-5 w-5 text-amber-500" />
+                      <div className="text-2xl font-bold">{(platformMetrics.systemLoad * 100).toFixed(0)}%</div>
                     </div>
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    {resourceAllocation.used.memory} of {resourceAllocation.total.memory} GB
-                  </p>
-                  <div className="w-full h-2 bg-gray-200 rounded-full mt-2">
-                    <div 
-                      className="h-2 bg-purple-500 rounded-full" 
-                      style={{ width: `${(resourceAllocation.used.memory / resourceAllocation.total.memory) * 100}%` }}
-                    ></div>
-                  </div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium">Storage Utilization</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-center gap-2">
-                    <Database className="h-5 w-5 text-amber-500" />
-                    <div className="text-2xl font-bold">
-                      {Math.round((resourceAllocation.used.storage / resourceAllocation.total.storage) * 100)}%
+                    <p className="text-xs text-muted-foreground">Current load based on CPU</p>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium">Avg. Response Time</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex items-center gap-2">
+                      <Clock className="h-5 w-5 text-indigo-500" />
+                      <div className="text-2xl font-bold">{platformMetrics.avgResponseTime} ms</div>
                     </div>
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    {resourceAllocation.used.storage} of {resourceAllocation.total.storage} GB
-                  </p>
-                  <div className="w-full h-2 bg-gray-200 rounded-full mt-2">
-                    <div 
-                      className="h-2 bg-amber-500 rounded-full" 
-                      style={{ width: `${(resourceAllocation.used.storage / resourceAllocation.total.storage) * 100}%` }}
-                    ></div>
-                  </div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium">Bandwidth Usage</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-center gap-2">
-                    <Network className="h-5 w-5 text-green-500" />
-                    <div className="text-2xl font-bold">
-                      {Math.round((resourceAllocation.used.bandwidth / resourceAllocation.total.bandwidth) * 100)}%
+                    <p className="text-xs text-muted-foreground">Across all requests</p>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium">Error Rate</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex items-center gap-2">
+                      <AlertCircle className="h-5 w-5 text-red-500" />
+                      <div className="text-2xl font-bold">{platformMetrics.errorRate}%</div>
                     </div>
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    {resourceAllocation.used.bandwidth} of {resourceAllocation.total.bandwidth} GB
-                  </p>
-                  <div className="w-full h-2 bg-gray-200 rounded-full mt-2">
-                    <div 
-                      className="h-2 bg-green-500 rounded-full" 
-                      style={{ width: `${(resourceAllocation.used.bandwidth / resourceAllocation.total.bandwidth) * 100}%` }}
-                    ></div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
+                    <p className="text-xs text-muted-foreground">Errors per total requests</p>
+                  </CardContent>
+                </Card>
+              </div>
 
-            {/* Resource History Chart */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Resource Utilization History</CardTitle>
-                <CardDescription>30-day history of server resource usage</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="h-80">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={resourceHistory}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="date" />
-                      <YAxis unit="%" />
-                      <Tooltip />
-                      <Legend />
-                      <Area 
-                        type="monotone" 
-                        dataKey="cpu" 
-                        name="CPU Usage" 
-                        stackId="1"
-                        stroke="#3b82f6" 
-                        fill="#3b82f6" 
-                        fillOpacity={0.3}
-                      />
-                      <Area 
-                        type="monotone" 
-                        dataKey="memory" 
-                        name="Memory Usage" 
-                        stackId="2"
-                        stroke="#8b5cf6" 
-                        fill="#8b5cf6" 
-                        fillOpacity={0.3}
-                      />
-                      <Area 
-                        type="monotone" 
-                        dataKey="network" 
-                        name="Network Usage" 
-                        stackId="3"
-                        stroke="#10b981" 
-                        fill="#10b981" 
-                        fillOpacity={0.3}
-                      />
-                    </AreaChart>
-                  </ResponsiveContainer>
-                </div>
-              </CardContent>
-            </Card>
+              {/* Resource Usage Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium">CPU Utilization</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex items-center gap-2">
+                      <Cpu className="h-5 w-5 text-blue-500" />
+                      <div className="text-2xl font-bold">{(platformMetrics.cpuUtilization * 100).toFixed(1)}%</div>
+                    </div>
+                    <p className="text-xs text-muted-foreground">Across all servers</p>
+                  </CardContent>
+                </Card>
 
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium">Memory Usage</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex items-center gap-2">
+                      <HardDrive className="h-5 w-5 text-purple-500" />
+                      <div className="text-2xl font-bold">{(platformMetrics.memoryUsage * 100).toFixed(1)}%</div>
+                    </div>
+                    <p className="text-xs text-muted-foreground">System memory used</p>
+                  </CardContent>
+                </Card>
+              </div>
 
-          </TabsContent>
-
-          {/* TENANTS TAB */}
-          <TabsContent value="tenants" className="space-y-6">
-            {/* Cost Summary */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium">Total Monthly Cost</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-center gap-2">
-                    <DollarSign className="h-5 w-5 text-green-500" />
-                    <div className="text-2xl font-bold">$12,487</div>
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    <span className="text-green-500">↓ 4.2%</span> from last month
-                  </p>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium">Active Tenants</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-center gap-2">
-                    <Users className="h-5 w-5 text-blue-500" />
-                    <div className="text-2xl font-bold">48</div>
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    <span className="text-green-500">↑ 3 new</span> this month
-                  </p>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium">Avg. Cost Per Tenant</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-center gap-2">
-                    <BarChart className="h-5 w-5 text-purple-500" />
-                    <div className="text-2xl font-bold">$260</div>
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    <span className="text-green-500">↓ 7.1%</span> from last month
-                  </p>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium">Resource Efficiency</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-center gap-2">
-                    <TrendingUp className="h-5 w-5 text-cyan-500" />
-                    <div className="text-2xl font-bold">72%</div>
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    <span className="text-green-500">↑ 5.3%</span> from last month
-                  </p>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Tenant Resource Usage */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Tenant Resource Allocation</CardTitle>
-                <CardDescription>Resource usage across top tenants</CardDescription>
-                <div className="flex gap-4 mt-4">
-                  <Input placeholder="Search tenants..." className="max-w-sm" />
-                  <Select defaultValue="resource-desc">
-                    <SelectTrigger className="w-40">
-                      <SelectValue placeholder="Sort By" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="resource-desc">Resource Usage ↓</SelectItem>
-                      <SelectItem value="resource-asc">Resource Usage ↑</SelectItem>
-                      <SelectItem value="cost-desc">Cost ↓</SelectItem>
-                      <SelectItem value="cost-asc">Cost ↑</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Tenant</TableHead>
-                      <TableHead>Servers</TableHead>
-                      <TableHead>CPU (cores)</TableHead>
-                      <TableHead>Memory (GB)</TableHead>
-                      <TableHead>Storage (GB)</TableHead>
-                      <TableHead>Monthly Cost ($)</TableHead>
-                      <TableHead>Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {tenantUsageData.map((tenant) => (
-                      <TableRow key={tenant.name}>
-                        <TableCell className="font-medium">{tenant.name}</TableCell>
-                        <TableCell>{tenant.servers}</TableCell>
-                        <TableCell>{tenant.cpu}</TableCell>
-                        <TableCell>{tenant.memory}</TableCell>
-                        <TableCell>{tenant.storage}</TableCell>
-                        <TableCell>${tenant.cost.toLocaleString()}</TableCell>
-                        <TableCell>
-                          <Button variant="ghost" size="sm">View Details</Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-
-            {/* Resource Distribution */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Performance Chart */}
               <Card>
                 <CardHeader>
-                  <CardTitle>Resource Distribution</CardTitle>
-                  <CardDescription>CPU and memory allocation across tenants</CardDescription>
+                  <CardTitle>Platform Performance</CardTitle>
+                  <CardDescription>
+                    Real-time performance metrics from the web server
+                  </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="h-96">
+                  <div className="h-80">
                     <ResponsiveContainer width="100%" height="100%">
-                      <BarChart
-                        data={tenantUsageData}
-                        layout="vertical"
-                        margin={{
-                          top: 20,
-                          right: 30,
-                          left: 20,
-                          bottom: 5,
-                        }}
-                      >
+                      <LineChart data={platformMetrics.performanceData}>
                         <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis type="number" />
-                        <YAxis dataKey="name" type="category" width={100} />
+                        <XAxis dataKey="time" />
+                        <YAxis />
                         <Tooltip />
                         <Legend />
-                        <Bar dataKey="cpu" name="CPU (cores)" stackId="a" fill="#3b82f6" />
-                        <Bar dataKey="memory" name="Memory (GB)" stackId="a" fill="#8b5cf6" />
+                        <Line
+                            type="monotone"
+                            dataKey="serverLoad"
+                            name="Server Load (%)"
+                            stroke="#f59e0b"
+                            activeDot={{ r: 8 }}
+                        />
+                        <Line
+                            type="monotone"
+                            dataKey="responseTime"
+                            name="Response Time (ms)"
+                            stroke="#8884d8"
+                        />
+                        <Line
+                            type="monotone"
+                            dataKey="errorRate"
+                            name="Error Rate (%)"
+                            stroke="#ef4444"
+                        />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* MULTI-TENANT TAB */}
+            <TabsContent value="tenants" className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Tenant Resource Usage</CardTitle>
+                  <CardDescription>Overview of tenant metrics</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="overflow-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                      <tr className="border-b bg-muted/50">
+                        <th className="px-4 py-2 text-left">Tenant</th>
+                        <th className="px-4 py-2 text-left">Apps</th>
+                        <th className="px-4 py-2 text-left">CPU (cores)</th>
+                        <th className="px-4 py-2 text-left">Memory (GB)</th>
+                      </tr>
+                      </thead>
+                      <tbody>
+                      {tenantUsage.map((tenant) => (
+                          <tr key={tenant.tenantName} className="border-b hover:bg-muted/50">
+                            <td className="px-4 py-2">{tenant.tenantName}</td>
+                            <td className="px-4 py-2">{tenant.apps}</td>
+                            <td className="px-4 py-2">{tenant.cpu}</td>
+                            <td className="px-4 py-2">{tenant.memory}</td>
+                          </tr>
+                      ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Tenant CPU Usage Chart */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Tenant CPU Usage</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-64">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart
+                          data={tenantUsage}
+                          margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                      >
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="tenantName" />
+                        <YAxis />
+                        <Tooltip />
+                        <Legend />
+                        <Bar dataKey="cpu" name="CPU (cores)" fill="#3b82f6" />
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
                 </CardContent>
               </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Cost Analysis</CardTitle>
-                  <CardDescription>Monthly cost breakdown by tenant</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="h-96">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
-                        <Pie
-                          data={tenantUsageData}
-                          cx="50%"
-                          cy="50%"
-                          labelLine={false}
-                          outerRadius={120}
-                          fill="#8884d8"
-                          dataKey="cost"
-                          nameKey="name"
-                          label={({name, percent}) => `${name}: ${(percent * 100).toFixed(1)}%`}
-                        >
-                          {tenantUsageData.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                          ))}
-                        </Pie>
-                        <Tooltip formatter={(value) => `$${value}`} />
-                        <Legend />
-                      </PieChart>
-                    </ResponsiveContainer>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Cost History */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Cost History</CardTitle>
-                <CardDescription>Monthly infrastructure costs over time</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="h-80">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart
-                      data={[
-                        { month: 'Jan', compute: 4200, storage: 1200, network: 850, misc: 450 },
-                        { month: 'Feb', compute: 4500, storage: 1300, network: 900, misc: 480 },
-                        { month: 'Mar', compute: 5100, storage: 1400, network: 950, misc: 520 },
-                        { month: 'Apr', compute: 4800, storage: 1500, network: 1000, misc: 550 },
-                        { month: 'May', compute: 5300, storage: 1600, network: 1050, misc: 570 },
-                        { month: 'Jun', compute: 5600, storage: 1700, network: 1100, misc: 590 },
-                        { month: 'Jul', compute: 5200, storage: 1800, network: 1150, misc: 610 },
-                        { month: 'Aug', compute: 4900, storage: 1900, network: 1200, misc: 630 },
-                        { month: 'Sep', compute: 5400, storage: 2000, network: 1250, misc: 650 },
-                        { month: 'Oct', compute: 5800, storage: 2100, network: 1300, misc: 670 },
-                        { month: 'Nov', compute: 6200, storage: 2200, network: 1350, misc: 690 },
-                        { month: 'Dec', compute: 5500, storage: 2300, network: 1400, misc: 710 },
-                      ]}
-                    >
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="month" />
-                      <YAxis />
-                      <Tooltip formatter={(value) => `$${value}`} />
-                      <Legend />
-                      <Line type="monotone" dataKey="compute" name="Compute" stroke="#3b82f6" activeDot={{ r: 8 }} />
-                      <Line type="monotone" dataKey="storage" name="Storage" stroke="#8b5cf6" />
-                      <Line type="monotone" dataKey="network" name="Network" stroke="#10b981" />
-                      <Line type="monotone" dataKey="misc" name="Miscellaneous" stroke="#f59e0b" />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Cost Optimization Recommendations */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Cost Optimization Recommendations</CardTitle>
-                <CardDescription>Suggestions to improve resource efficiency</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="flex items-start gap-4 p-4 bg-blue-50 rounded-lg">
-                    <div className="flex-shrink-0 bg-blue-100 rounded-full p-2">
-                      <Cpu className="h-5 w-5 text-blue-600" />
-                    </div>
-                    <div>
-                      <h3 className="font-medium text-blue-900">Right-size over-provisioned servers</h3>
-                      <p className="text-sm text-blue-700 mt-1">
-                        8 servers are running at less than 20% CPU utilization. Consider downsizing these instances.
-                      </p>
-                      <div className="mt-2">
-                        <Badge variant="outline" className="bg-blue-100 text-blue-700">Estimated savings: $840/month</Badge>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex items-start gap-4 p-4 bg-green-50 rounded-lg">
-                    <div className="flex-shrink-0 bg-green-100 rounded-full p-2">
-                      <Database className="h-5 w-5 text-green-600" />
-                    </div>
-                    <div>
-                      <h3 className="font-medium text-green-900">Optimize storage usage</h3>
-                      <p className="text-sm text-green-700 mt-1">
-                        3 tenants have unused storage volumes. Consider implementing an auto-cleanup policy for inactive storage.
-                      </p>
-                      <div className="mt-2">
-                        <Badge variant="outline" className="bg-green-100 text-green-700">Estimated savings: $320/month</Badge>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex items-start gap-4 p-4 bg-purple-50 rounded-lg">
-                    <div className="flex-shrink-0 bg-purple-100 rounded-full p-2">
-                      <Users className="h-5 w-5 text-purple-600" />
-                    </div>
-                    <div>
-                      <h3 className="font-medium text-purple-900">Implement shared resource pools</h3>
-                      <p className="text-sm text-purple-700 mt-1">
-                        Tenants with similar workload patterns could benefit from shared resource allocation.
-                        This would improve utilization during peak/off-peak hours.
-                      </p>
-                      <div className="mt-2">
-                        <Badge variant="outline" className="bg-purple-100 text-purple-700">Estimated savings: $560/month</Badge>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
+            </TabsContent>
+          </Tabs>
+        </div>
       </div>
-    </div>
   );
-};
+}
 
 export default EngineeringDashboard;

@@ -1,132 +1,129 @@
 
-import { ApplicationData, RealTimeMetrics } from "@/components/types";
+// src/components/api.ts
 
-// Example interface matching your server's JSON
-interface ServerAppData {
+// This interface matches DB.App in your Java code, including tenantId, ownerUserId, etc.
+export interface DBApp {
   appId: number;
+  tenantId: number;
+  ownerUserId: number;
   name: string;
-  status: string; // The server returns a generic string.
-  url?: string;
-  runtime?: string;
-  environment?: string;
-  sslStatus?: string;
-  autoScaling?: string;
-  version?: string;
-  lastDeployment?: string;
+  runtime: string;    // e.g. "nodejs", "php", "dotnet"
+  status: string;     // e.g. "running" or "stopped"
+  routes?: string[];  // optional array of routes
 }
 
-const API_BASE_URL = 'http://localhost:8080/api';
+// -----------------------
+//  Basic or Global calls
+// -----------------------
 
-export const api = {
-  // NEW version: fetch data for a single app by calling ?userId=...,
-  // then pick out the one with matching appId.
-  async fetchApplicationData(userId: number, appId: number): Promise<ApplicationData> {
-    try {
-      // 1) Call the Java endpoint to fetch all apps for this user
-      const response = await fetch(`${API_BASE_URL}/applications?userId=${userId}`, {
-        method: 'GET',
-        headers: {
-          Accept: 'application/json',
-        },
-      });
-      if (!response.ok) {
-        throw new Error(`Failed to fetch apps for userId=${userId}; status=${response.status}`);
-      }
+// Lists all apps (GET /api/apps)
+export async function getAllApps(): Promise<DBApp[]> {
+  const resp = await fetch("http://localhost:8080/api/apps");
+  if (!resp.ok) {
+    throw new Error(`Failed to fetch apps; status=${resp.status}`);
+  }
+  return resp.json();
+}
 
-      const apps: ServerAppData[] = await response.json();
+// Refresh DB (POST /api/refresh)
+export async function refreshDB(): Promise<void> {
+  const resp = await fetch("http://localhost:8080/api/refresh", { method: "POST" });
+  if (!resp.ok) {
+    throw new Error(`Failed to refresh DB; status=${resp.status}`);
+  }
+}
 
-      // 3) Find the specific app
-      const found = apps.find((app) => app.appId === appId);
+// -----------------------
+//  Tenant-level endpoints
+// -----------------------
 
-      if (!found) {
-        throw new Error(`No app with appId=${appId} for userId=${userId}`);
-      }
+// Create an app under a specific tenant (POST /api/tenants/{tenantId}/apps)
+export async function createApp(
+    tenantId: number,
+    name: string,
+    runtime: string,
+    ownerUserId: number
+): Promise<DBApp> {
+  const resp = await fetch(`http://localhost:8080/api/tenants/${tenantId}/apps`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name, runtime, ownerUserId }),
+  });
+  if (!resp.ok) {
+    throw new Error(`Failed to create app; status=${resp.status}`);
+  }
+  return resp.json();
+}
 
-      // Convert server's status (string) to a literal type "running" | "stopped"
-      const status = found.status === 'running' ? 'running' : 'stopped';
+// Upload zip as raw bytes (POST /api/tenants/{tenantId}/apps/{appId}/upload)
+export async function uploadZip(
+    tenantId: number,
+    appId: number,
+    zipBytes: Uint8Array
+): Promise<void> {
+  const url = `http://localhost:8080/api/tenants/${tenantId}/apps/${appId}/upload`;
+  const resp = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/octet-stream" },
+    body: zipBytes,
+  });
+  if (!resp.ok) {
+    throw new Error(`Failed to upload zip; status=${resp.status}`);
+  }
+}
 
-      // 4) Return an object shaped the way ApplicationDetails.tsx expects
-      return {
-        name: found.name || '',
-        status, // now typed as "running" | "stopped"
-        url: found.url || '',
-        runtime: found.runtime || '',
-        environment: found.environment || '',
-        sslStatus: found.sslStatus || '',
-        autoScaling: found.autoScaling || '',
-        version: found.version || '',
-        lastDeployment: found.lastDeployment || '',
-      };
+// -----------------------
+// Single tenant-app calls
+// (handleSingleAppUnderTenant routes)
+// -----------------------
 
-    } catch (error) {
-      console.error('Error fetching application data:', error);
-      // Fallback: blank default object
-      return {
-        name: '',
-        status: 'stopped',
-        url: '',
-        runtime: '',
-        environment: '',
-        sslStatus: '',
-        autoScaling: '',
-        version: '',
-        lastDeployment: '',
-      };
-    }
-  },
+// Get a single app by tenantId & appId (GET /api/tenants/{tenantId}/apps/{appId})
+export async function getTenantApp(tenantId: number, appId: number): Promise<DBApp> {
+  const resp = await fetch(`http://localhost:8080/api/tenants/${tenantId}/apps/${appId}`);
+  if (!resp.ok) {
+    throw new Error(`Failed to fetch app #${appId} in tenant ${tenantId}; status=${resp.status}`);
+  }
+  return resp.json();
+}
 
-  async fetchMetrics(appId: number): Promise<RealTimeMetrics> {
-    try {
-      const response = await fetch(`${API_BASE_URL}/applications/${appId}/metrics`);
-      if (!response.ok) throw new Error('Failed to fetch metrics');
-      return await response.json();
-    } catch (error) {
-      console.error('Error fetching metrics:', error);
-      return {
-        requests24h: 0,
-        avgResponseTime: 0,
-        errorRate: 0,
-        storageUsed: 0,
-        performanceData: Array(24).fill(null).map((_, i) => ({
-          time: `${i}:00`,
-          responseTime: 0,
-          requests: 0,
-          errors: 0,
-        })),
-      };
-    }
-  },
+export async function getTenantApps(tenantId: number): Promise<DBApp[]> {
+  const resp = await fetch(`http://localhost:8080/api/tenants/${tenantId}/apps`);
+  if (!resp.ok) {
+    throw new Error(`Failed to list apps for tenant=${tenantId}, status=${resp.status}`);
+  }
+  return resp.json();
+}
 
-  async toggleApplicationStatus(appId: number, newStatus: 'running' | 'stopped'): Promise<void> {
-    const userId = 3
-    try {
-      const response = await fetch(`${API_BASE_URL}/applications/status?userId=${userId}&appId=${appId}&status=${newStatus}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ status: newStatus }),
-      });
-      if (!response.ok) throw new Error('Failed to update application status');
-    } catch (error) {
-      console.error('Error updating application status:', error);
-      throw error;
-    }
-  },
+// Update an app’s fields, e.g. name, runtime, or status (PUT /api/tenants/{tenantId}/apps/{appId})
+export async function updateTenantApp(
+    tenantId: number,
+    appId: number,
+    fields: Partial<{ name: string; runtime: string; status: string }>
+): Promise<DBApp> {
+  const resp = await fetch(`http://localhost:8080/api/tenants/${tenantId}/apps/${appId}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(fields),
+  });
+  if (!resp.ok) {
+    throw new Error(`Failed to update app #${appId}; status=${resp.status}`);
+  }
+  return resp.json();
+}
 
-  async deployNewVersion(appId: number, version: string): Promise<void> {
-    try {
-      const response = await fetch(`${API_BASE_URL}/applications/${appId}/deploy`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ version }),
-      });
-      if (!response.ok) throw new Error('Failed to deploy new version');
-    } catch (error) {
-      console.error('Error deploying new version:', error);
-      throw error;
-    }
-  },
-};
+// Delete an app (DELETE /api/tenants/{tenantId}/apps/{appId})
+export async function deleteTenantApp(tenantId: number, appId: number): Promise<void> {
+  const resp = await fetch(`http://localhost:8080/api/tenants/${tenantId}/apps/${appId}`, {
+    method: "DELETE",
+  });
+  // The server typically returns 204 on success
+  if (!resp.ok && resp.status !== 204) {
+    throw new Error(`Failed to delete app #${appId}; status=${resp.status}`);
+  }
+}
+
+
+export async function setAppStatus(tenantId: number, appId: number, newStatus: string): Promise<void> {
+  await updateTenantApp(tenantId, appId, { status: newStatus });
+}
+
