@@ -349,6 +349,33 @@ public class Telemetry {
         }
     }
 
+    public static void trackDiskUsage(){
+        try{
+            File[] roots = File.listRoots();
+
+            for(File root:roots){
+                long totalSpace = root.getTotalSpace();
+                long spaceUsable = root.getUsableSpace();
+                long spaceUsed = totalSpace - spaceUsable;
+
+                //convert the values to gigabutes, better for readability
+                double totalGB = totalSpace / (1024.0 * 1024.0 * 1024.0);
+                double usedGB = spaceUsed/ (1024.0 * 1024.0 * 1024.0);
+                double freeGB = spaceUsable / (1024.0 * 1024.0 * 1024.0);
+
+                client.trackMetric("TotalGB", totalGB );
+                client.trackMetric("UsedGB", usedGB);
+                client.trackMetric("FreeGB", freeGB);
+            }
+            
+            client.flush();
+
+        }
+        catch(Exception e){
+            System.err.println("There was an error when tracking disk usage: " + e.getMessage());
+        }
+    }
+
     public static void trackLogMetric(String level, String message){
         try {
             SeverityLevel severity = switch (level.toUpperCase()) {

@@ -77,4 +77,11 @@ public class FileService {
         System.out.println("This is the resolved Path" + resolvedPath);
         return resolvedPath;
     }
+    public static String getFileExtension(String scriptPath) {
+        int lastDotIndex = scriptPath.lastIndexOf('.');
+        String fileExtension = lastDotIndex == -1 ?"" : scriptPath.substring(lastDotIndex+1);
+        return fileExtension;
+    }
+
+
 }
