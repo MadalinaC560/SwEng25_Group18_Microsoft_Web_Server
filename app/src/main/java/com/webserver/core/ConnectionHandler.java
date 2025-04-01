@@ -1,5 +1,6 @@
 package com.webserver.core;
 
+import com.google.gson.GsonBuilder;
 import com.webserver.azure.AzureBlobInterface;
 import com.webserver.http.HttpParser;
 import com.webserver.http.RequestProcessor;
@@ -60,6 +61,9 @@ public class ConnectionHandler implements Runnable {
 
             // Telemetry
             Telemetry.trackResponseTime(startTime);
+
+            Telemetry.trackServerMetrics(System.currentTimeMillis());
+
             clientSocket.close();
         } catch (Exception e) {
             Logger.error("Error handling connection", e);
@@ -91,7 +95,7 @@ public class ConnectionHandler implements Runnable {
                                 byte[] content = is.readAllBytes();
 
                                 // Derive MIME type
-                                // If you have a utility method for that:
+                                // might have a utility method for this:
                                 String mime = com.webserver.util.MimeTypes.getMimeType(filePath);
 
                                 return new HttpResponse.Builder()
@@ -133,6 +137,10 @@ public class ConnectionHandler implements Runnable {
 
         // A simple refresh route
         processor.addRoute("/api/refresh", this::handleRefresh);
+
+
+        processor.addRoute("/api/metrics", this::handleMetrics);
+
 
     }
 
@@ -194,6 +202,26 @@ public class ConnectionHandler implements Runnable {
         // If none matched, 404
         return createError(404, "Not Found");
     }
+
+    private HttpResponse handleMetrics(HttpRequest request) {
+        // 1) Ensure it's a GET request
+        if (!"GET".equalsIgnoreCase(request.getMethod())) {
+            return createError(405, "Method Not Allowed");
+        }
+
+        // 2) Gather real data from Telemetry
+        Map<String, Object> data = new HashMap<>();
+        data.put("cpuUtilization", Telemetry.getCpuUsage());
+        data.put("memoryUsage", Telemetry.getMemoryUsage());
+        data.put("avgResponseTime", Telemetry.getAvgResponseTime());
+        data.put("errorRate", Telemetry.getErrorRate());
+        data.put("systemLoad", Telemetry.getSystemLoad());
+        data.put("performanceData", Telemetry.getPerformanceData());
+
+        // 3) Return JSON
+        return createJsonResponse(200, toJson(data));
+    }
+
 
     private HttpResponse handleTenantAppUpload(HttpRequest request, String tenantIdStr, String appIdStr) {
         // 1) Check method
@@ -270,6 +298,7 @@ public class ConnectionHandler implements Runnable {
             return createError(500, "Error uploading ZIP: " + e.getMessage());
         }
     }
+
 
 
     private HttpResponse handleTenantAppsCollection(HttpRequest request, String tenantIdStr) {
@@ -824,7 +853,9 @@ public class ConnectionHandler implements Runnable {
     }
 
     private String toJson(Object data) {
-        return new com.google.gson.Gson().toJson(data);
+//        return new com.google.gson.Gson().toJson(data);
+        return new GsonBuilder().serializeSpecialFloatingPointValues().create().toJson(data);
+
     }
 
     private Map<String,Object> parseJsonMap(String json) {

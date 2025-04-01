@@ -15,13 +15,11 @@ export interface RealTimeMetrics {
 }
 
 export interface ApplicationData {
-  name: string;
-  status: 'running' | 'stopped';
-  url: string;
-  runtime: string;
-  environment: string;
+  appID: number
+  appName: string
+  tenantID: number
+  appRuntime: string;
+  appStatus: string;
+  appUrl: string;
   sslStatus: string;
-  autoScaling: string;
-  version: string;
-  lastDeployment: string;
 }
