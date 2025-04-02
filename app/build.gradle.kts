@@ -18,6 +18,8 @@ dependencies {
 
     testImplementation("org.junit.jupiter:junit-jupiter:5.9.3")
 
+    implementation("org.slf4j:slf4j-simple:2.0.9")
+
 
     // Azure stk bom
     implementation(platform("com.azure:azure-sdk-bom:1.2.32"))
@@ -44,5 +46,9 @@ application {
 tasks.jar {
     manifest {
         attributes["Main-Class"] = application.mainClass.get()
+    }
+
+    from("webroot") {
+        into("webroot")
     }
 }
