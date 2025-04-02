@@ -20,7 +20,7 @@ public class PhpScriptProcessorTest {
         String filePath = System.getProperty("user.dir") + "\\test_scripting\\hello.php";
         String response = processor.processScript(filePath);
         assertNotNull(response);
-        assertTrue(response.contains("\"output\":\"Hello, World!\""), "Response should contain the script's output");
+        assertTrue(response.contains("\"output\":\"<h1>Hello from PHP!</h1>"));
         assertTrue(response.contains("\"exit_code\":0"), "Script should exit successfully");
     }
     @Test
@@ -51,14 +51,5 @@ public class PhpScriptProcessorTest {
         assertTrue(response.contains("\"exit_code\":124"), "Script should exit unsuccessfully");
 
     }
-//    @Test
-//    public void testIncorrectAPIKey() {
-//        PhpScriptProcessor processor = new PhpScriptProcessor();
-//        String filePath = System.getProperty("user.dir") + "\\test_scripting\\hello.php";
-//        String response = processor.processScript(filePath);
-//        assertNotNull(response);
-//        assertTrue(response.contains("\"error\":\"Unauthorised Access\""));
-//        assertTrue(response.contains("\"exit_code\":2"), "Script should exit unsuccessfully");
-//    }
 
 }
