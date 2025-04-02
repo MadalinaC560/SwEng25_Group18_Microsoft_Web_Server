@@ -38,7 +38,7 @@ def run_php():
         tmp_path = tmp.name
 
     try:
-        result = subprocess.run(["php", "-c", "/path/to/php/ini", tmp_path], capture_output=True, text=True, timeout=10)
+        result = subprocess.run(["php", "-c", "ini", tmp_path], capture_output=True, text=True, timeout=10)
         output = result.stdout
         error = result.stderr
         exit_code = result.returncode

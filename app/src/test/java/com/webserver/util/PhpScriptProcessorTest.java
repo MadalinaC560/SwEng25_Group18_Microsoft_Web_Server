@@ -15,6 +15,19 @@ public class PhpScriptProcessorTest {
         assertEquals("{\"code\": \"Hello World\"}", jsonOutput);
     }
     @Test
+    public void testRunLoopPHPScript() {
+        PhpScriptProcessor processor = new PhpScriptProcessor();
+        String filePath = System.getProperty("user.dir") + "\\test_scripting\\app.php";
+
+        String response = processor.processScript(filePath);
+
+        assertNotNull(response, "Response should not be null");
+        assertTrue(response.contains("<h2>Hello, Cloudle User!</h2>"), "Expected greeting not found in output");
+        assertTrue(response.contains("<li>App #1 deployed!</li>"), "Expected loop output for App #1 not found");
+        assertTrue(response.contains("<li>App #3 deployed!</li>"), "Expected loop output for App #3 not found");
+        assertTrue(response.contains("\"exit_code\":0"), "Script should exit successfully");
+    }
+    @Test
     public void testRunSimplePHPScript() {
         PhpScriptProcessor processor = new PhpScriptProcessor();
         String filePath = System.getProperty("user.dir") + "\\test_scripting\\hello.php";
