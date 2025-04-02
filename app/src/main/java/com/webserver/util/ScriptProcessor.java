@@ -21,7 +21,7 @@ public abstract class ScriptProcessor {
             while ((line = reader.readLine()) != null) {
                 response.append(line.trim());
             }
-            //System.out.print(response.toString());
+            System.out.print(response.toString());
             return response.toString();
         }
     }
