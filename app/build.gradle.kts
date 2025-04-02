@@ -52,3 +52,19 @@ tasks.jar {
         into("webroot")
     }
 }
+
+tasks.shadowJar {
+    manifest {
+        attributes["Main-Class"] = application.mainClass.get()
+    }
+
+    from("../webroot") {
+        into("webroot")
+    }
+
+    archiveBaseName.set("cloudle")
+    archiveClassifier.set("")
+    archiveVersion.set("")
+    mergeServiceFiles()
+
+}
