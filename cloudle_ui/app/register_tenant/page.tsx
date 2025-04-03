@@ -5,12 +5,12 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Github } from 'lucide-react';
 
 export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [tenantID, setTenantID] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -18,9 +18,6 @@ export default function LoginPage() {
     router.push('/');
   };
 
-  const handleRegister = () => {
-    router.push('/register_account')
-  }
   const handleTenant = () => {
     router.push('/tenant_login')
   }
@@ -58,21 +55,20 @@ export default function LoginPage() {
           {/* Right Section - Login Form */}
           <div className="flex-1 flex flex-col bg-white">
             <div className="flex justify-end p-6">
-              <Button 
-              onClick={handleTenant}
-              variant="ghost">
+              <Button onClick={handleTenant} variant="ghost">
                 Tenant Login
-              </Button>
+              </Button>         
+
             </div>
 
             <div className="flex-1 flex items-center justify-center px-12">
               <div className="w-full max-w-sm space-y-8">
                 <div className="space-y-2">
                   <h2 className="text-3xl font-bold tracking-tight text-gray-900">
-                    User Login
+                    Create Tenant Account
                   </h2>
                   <p className="text-gray-500">
-                    Enter your email below to log into your account
+                    Enter your email below to create a tenant admin account
                   </p>
                 </div>
 
@@ -80,12 +76,23 @@ export default function LoginPage() {
                   <div className="space-y-2">
                     <Input
                         type="email"
-                        placeholder="name@example.com"
+                        placeholder="admin@org.domain"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         required
                     />
                   </div>
+
+                {/* Organisation Input */}
+                <div className="space-y-2">
+                  <Input
+                    type="tenantID"
+                    placeholder="Name of Organisation"
+                    value={password}
+                    onChange={(e) => setTenantID(e.target.value)}
+                    required
+                  />
+                </div>
 
                 {/* Password Input */}
                 <div className="space-y-2">
@@ -98,21 +105,26 @@ export default function LoginPage() {
                   />
                 </div>
 
+                {/* Password Input */}
+                <div className="space-y-2">
+                  <Input
+                    type="password"
+                    placeholder="Re-enter your password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                  />
+                </div>
+
                   <Button type="submit" className="w-full">
-                    Sign In with Email
+                    Create
                   </Button>
 
                   <div className="relative">
                     <div className="absolute inset-0 flex items-center">
                       <span className="w-full border-t"></span>
                     </div>
-                    <div className="relative flex justify-center text-xs uppercase">
-                      <span className="bg-white px-2 text-gray-500">Or Register an Account</span>
-                    </div>
                   </div>
-                  <Button onClick={handleRegister} type="submit" variant="secondary" className="w-full">
-                        Register New Account
-                  </Button>
                 </form>
               </div>
             </div>
