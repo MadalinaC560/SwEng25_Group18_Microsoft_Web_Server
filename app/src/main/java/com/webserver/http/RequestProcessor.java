@@ -50,15 +50,32 @@ public class RequestProcessor {
 
         String path = request.getBasePath();  // e.g. "/api/tenants/101"
 
-        if ("GET".equalsIgnoreCase(request.getMethod()) && path.endsWith("/")) {
-            // e.g. "/app_4002/" -> redirect to "/app_4002/index.html"
-
-            // Build a 302 response with a "Location" header.
+//        if ("GET".equalsIgnoreCase(request.getMethod()) && path.endsWith("/")) {
+//            // e.g. "/app_4002/" -> redirect to "/app_4002/index.html"
+//
+//            // Build a 302 response with a "Location" header.
+//            return new HttpResponse.Builder()
+//                    .setStatusCode(302)  // 302 Found (temporary redirect)
+//                    .addHeader("Location", path + "index.html")
+//                    .build();
+//        }
+//         If GET and the path is exactly "/", return a default page
+        if ("GET".equalsIgnoreCase(request.getMethod()) && "/".equals(path)) {
             return new HttpResponse.Builder()
-                    .setStatusCode(302)  // 302 Found (temporary redirect)
+                    .setStatusCode(200)
+                    .addHeader("Content-Type", "text/html")
+                    .setBody("<html><h1>Welcome to Cloudle!</h1><p>This is the default root page!</p></html>")
+                    .build();
+        }
+
+// Otherwise, if GET and the path ends in "/", redirect to "index.html"
+        if ("GET".equalsIgnoreCase(request.getMethod()) && path.endsWith("/")) {
+            return new HttpResponse.Builder()
+                    .setStatusCode(302)
                     .addHeader("Location", path + "index.html")
                     .build();
         }
+
 
         // 1) First try exact route
         RouteHandler handler = routes.get(path);
