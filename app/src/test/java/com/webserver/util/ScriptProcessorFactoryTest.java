@@ -13,6 +13,7 @@ public class ScriptProcessorFactoryTest {
     public void testScriptProcessorFactory() {
         ScriptProcessorFactory factory = new ScriptProcessorFactory();
         ScriptProcessor processor = factory.getProcessorForExtension("php");
+
         System.out.println(processor.getClass().getSimpleName()); // Prints: PhpScriptProcessor
         assertNotNull(processor, "Processor should not be null for 'php'");
         String filePath = System.getProperty("user.dir") + "\\test_scripting\\hello.php";
