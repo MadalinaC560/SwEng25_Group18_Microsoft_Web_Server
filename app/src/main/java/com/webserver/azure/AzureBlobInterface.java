@@ -1,25 +1,28 @@
 
 package com.webserver.azure;
 
-import com.azure.core.util.BinaryData;
-import com.azure.storage.blob.*;
-import com.azure.storage.blob.models.*;
-import io.github.cdimascio.dotenv.Dotenv;
-
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.file.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
+import com.azure.storage.blob.BlobClient;
+import com.azure.storage.blob.BlobContainerClient;
+import com.azure.storage.blob.BlobServiceClient;
+import com.azure.storage.blob.BlobServiceClientBuilder;
+import com.azure.storage.blob.models.BlobItem;
+import com.azure.storage.blob.models.BlobStorageException;
+import com.azure.storage.blob.models.ListBlobsOptions;
+
 public class AzureBlobInterface {
 
-    private static final Dotenv dotenv = Dotenv.load();
-//    private static final String CONNECTION_STRING = dotenv.get("AZURE_STORAGE_CONNECTION_STRING");
-
-
+    // private static final Dotenv dotenv = Dotenv.load();
     private static final String CONNECTION_STRING = "DefaultEndpointsProtocol=https;AccountName=cloudleuserfilestorage;AccountKey=XYH0bLbJ/oxMUygsfotDe7EqHpVP109z99au5ZONgDpBeMd7YxIYk8rIIfKDKzIT6AndgGkgEMJM+ASt2nEcTg==;EndpointSuffix=core.windows.net";
     private static final String CONTAINER_NAME = "userfiles";
 
