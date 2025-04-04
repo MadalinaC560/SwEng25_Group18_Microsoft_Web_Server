@@ -66,7 +66,6 @@ public class FileService {
 
     private Path resolvePath(String requestPath) {
         requestPath = requestPath.replaceAll("^/+", "");
-
         //TODO - Bug to fix, if we get .../index.html/ - dir is assumed, which is wrong
         if (requestPath.isEmpty() || requestPath.endsWith("/"))
         {
@@ -82,6 +81,19 @@ public class FileService {
         String fileExtension = lastDotIndex == -1 ?"" : scriptPath.substring(lastDotIndex+1);
         return fileExtension;
     }
+    public String resolveScriptPath(String scriptPath)
+    {
+        Path path = resolvePath(scriptPath);
+        if (isValidPath(path))
+        {
+            return path.toString();
+        }
+        else
+        {
+            return null;
+        }
+    }
+
 
 
 }
