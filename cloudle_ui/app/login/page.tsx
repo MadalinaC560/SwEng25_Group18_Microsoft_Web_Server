@@ -32,8 +32,12 @@ export default function LoginPage() {
       localStorage.setItem('isAuthenticated', 'true');
 
       router.push('/');
-    } catch (err: any) {
-      setError(err.message || 'Something went wrong.');
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError('Something went wrong.');
+      }
     } finally {
       setLoading(false);
     }
