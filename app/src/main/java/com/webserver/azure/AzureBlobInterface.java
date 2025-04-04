@@ -17,7 +17,10 @@ import java.util.zip.ZipInputStream;
 public class AzureBlobInterface {
 
     private static final Dotenv dotenv = Dotenv.load();
-    private static final String CONNECTION_STRING = dotenv.get("AZURE_STORAGE_CONNECTION_STRING");
+//    private static final String CONNECTION_STRING = dotenv.get("AZURE_STORAGE_CONNECTION_STRING");
+
+
+    private static final String CONNECTION_STRING = "DefaultEndpointsProtocol=https;AccountName=cloudleuserfilestorage;AccountKey=REDACTED==;EndpointSuffix=core.windows.net";
     private static final String CONTAINER_NAME = "userfiles";
 
     private final BlobServiceClient blobServiceClient;
