@@ -5,6 +5,8 @@
 plugins {
     // Apply the application plugin to add support for building a CLI application in Java.
     application
+
+    id("com.github.johnrengelman.shadow") version "8.1.1"
 }
 
 repositories {
@@ -15,6 +17,8 @@ repositories {
 dependencies {
 
     testImplementation("org.junit.jupiter:junit-jupiter:5.9.3")
+
+    implementation("org.slf4j:slf4j-simple:2.0.9")
 
 
     // Azure stk bom
@@ -43,4 +47,24 @@ tasks.jar {
     manifest {
         attributes["Main-Class"] = application.mainClass.get()
     }
+
+    from("webroot") {
+        into("webroot")
+    }
+}
+
+tasks.shadowJar {
+    manifest {
+        attributes["Main-Class"] = application.mainClass.get()
+    }
+
+    from("../webroot") {
+        into("webroot")
+    }
+
+    archiveBaseName.set("cloudle")
+    archiveClassifier.set("")
+    archiveVersion.set("")
+    mergeServiceFiles()
+
 }
