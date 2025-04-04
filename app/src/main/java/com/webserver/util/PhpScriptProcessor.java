@@ -40,7 +40,8 @@ public class PhpScriptProcessor extends ScriptProcessor {
             }
             //Read and return the response from the API
             //Should be a json of the processed script
-            return readResponse(conn);
+            String jsonResponse = readResponse(conn);
+            return getCodeFromResponse(jsonResponse);
         } catch (Exception e)
         {
             return null;
