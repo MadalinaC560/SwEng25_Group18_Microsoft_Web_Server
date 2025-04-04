@@ -16,7 +16,6 @@ $time = date("l, F j, Y - H:i:s");
 
 // Get system info
 $phpVersion = phpversion();
-$serverOS = PHP_OS;
 
 // Output with some simple styling
 echo <<<HTML
@@ -38,7 +37,6 @@ echo <<<HTML
     <div class="info-box">
         <p><span class="label">Current Server Time:</span> $time</p>
         <p><span class="label">PHP Version:</span> $phpVersion</p>
-        <p><span class="label">Server OS:</span> $serverOS</p>
     </div>
 </body>
 </html>
