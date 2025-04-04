@@ -10,7 +10,7 @@ export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [tenantID, setTenantID] = useState('');
+  //const [tenantID, setTenantID] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -89,7 +89,7 @@ export default function LoginPage() {
                     type="tenantID"
                     placeholder="Name of Organisation"
                     value={password}
-                    onChange={(e) => setTenantID(e.target.value)}
+                    //onChange={(e) => setTenantID(e.target.value)}
                     required
                   />
                 </div>

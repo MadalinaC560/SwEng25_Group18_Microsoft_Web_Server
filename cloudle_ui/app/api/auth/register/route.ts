@@ -1,6 +1,14 @@
 import { NextResponse } from "next/server";
 import fs from "fs/promises";
 import path from "path";
+import bcrypt from "bcrypt";
+
+interface User {
+  email: string;
+  password: string;
+}
+
+const USERS_FILE_PATH = path.join(process.cwd(), "supersecureusers.json");
 
 export async function POST(req: Request) {
   try {
@@ -10,31 +18,34 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Email and password are required" }, { status: 400 });
     }
 
-    // Define the path to the user file
-    const usersFilePath = path.join(process.cwd(), "supersecureusers.json");
-
-    let users = [];
+    let users: User[] = [];
 
     try {
-      // Check if the file exists and is not empty
-      const usersData = await fs.readFile(usersFilePath, "utf-8");
-      users = usersData.trim() ? JSON.parse(usersData) : []; // Handle empty file
-    } catch (error) {
-      console.warn("User file missing or empty, initializing...");
+      // Read existing users
+      const usersData = await fs.readFile(USERS_FILE_PATH, "utf-8");
+      users = usersData.trim() ? JSON.parse(usersData) : [];
+    } catch (error: any) {
+      if (error.code !== "ENOENT") {
+        console.error("Error reading users file:", error);
+        return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+      }
+      // File doesn't exist, assume empty user list
       users = [];
     }
 
-    // Check if user already exists
-    if (users.find((u: any) => u.email === email)) {
+    // Check if the user already exists
+    if (users.find((u) => u.email === email)) {
       return NextResponse.json({ error: "User already exists" }, { status: 400 });
     }
 
-    // Add new user
-    const newUser = { email, password };
+    // Hash the password before saving
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const newUser: User = { email, password: hashedPassword };
+
     users.push(newUser);
 
-    // Save the new user list to the file
-    await fs.writeFile(usersFilePath, JSON.stringify(users, null, 2));
+    // Save the new user list (write atomically)
+    await fs.writeFile(USERS_FILE_PATH, JSON.stringify(users, null, 2), "utf-8");
 
     return NextResponse.json({ message: "User registered successfully" }, { status: 201 });
   } catch (error) {
