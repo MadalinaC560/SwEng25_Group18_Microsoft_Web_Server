@@ -4,6 +4,7 @@ import path from "path";
 import bcrypt from "bcrypt";
 
 interface User {
+  tenantEmail: string;
   email: string;
   password: string;
 }
@@ -12,10 +13,13 @@ const USERS_FILE_PATH = path.join(process.cwd(), "supersecureusers.json");
 
 export async function POST(req: Request): Promise<NextResponse> {
   try {
-    const { email, password }: { email: string; password: string } = await req.json();
+    const { tenantEmail, email, password }: { tenantEmail: string; email: string; password: string } = await req.json();
 
-    if (!email || !password) {
-      return NextResponse.json({ error: "Email and password are required" }, { status: 400 });
+    if (!tenantEmail || !email || !password) {
+      return NextResponse.json(
+        { error: "Tenant email, user email, and password are required" },
+        { status: 400 }
+      );
     }
 
     let users: User[] = [];
@@ -31,12 +35,25 @@ export async function POST(req: Request): Promise<NextResponse> {
       }
     }
 
-    if (users.some((u) => u.email === email)) {
-      return NextResponse.json({ error: "User already exists" }, { status: 400 });
+    const userExists = users.some(
+      (u) => u.email === email && u.tenantEmail === tenantEmail
+    );
+
+    if (userExists) {
+      return NextResponse.json(
+        { error: "User already exists for this tenant" },
+        { status: 400 }
+      );
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    const newUser: User = { email, password: hashedPassword };
+
+    const newUser: User = {
+      tenantEmail,
+      email,
+      password: hashedPassword
+    };
+
     users.push(newUser);
 
     await fs.writeFile(USERS_FILE_PATH, JSON.stringify(users, null, 2), "utf-8");

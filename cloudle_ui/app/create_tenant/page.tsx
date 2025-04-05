@@ -4,17 +4,16 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import myGif from "@/public/web-browser.gif";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Cloud } from 'lucide-react';
 
-export default function RegisterAccountPage() {
+export default function CreateTenantPage() {
   const router = useRouter();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-  const [tenantEmail, setTenantEmail] = useState('');
 
+  const [orgName, setOrgName] = useState('');
+  const [orgEmail, setOrgEmail] = useState('');
+  const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -23,15 +22,16 @@ export default function RegisterAccountPage() {
     setError('');
 
     try {
-      const response = await fetch('/api/auth/register', {
+      const response = await fetch('/api/auth/tenant', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tenantEmail, email, password }),
-
+        body: JSON.stringify({ orgName, orgEmail }),
       });
+      
 
       const data = await response.json();
       if (!response.ok) throw new Error(data.error);
+
       router.push('/login');
     } catch (err: any) {
       setError(err.message || 'Something went wrong.');
@@ -75,56 +75,43 @@ export default function RegisterAccountPage() {
             <div className="space-y-4">
               <blockquote className="text-2xl font-medium leading-relaxed">Cloud first Web Server</blockquote>
               <div className="text-white/60">
-                <Image src={myGif} alt="register gif" width={400} height={400} className="object-contain rounded-full mx-auto"/>
+                <Image src={myGif} alt="tenant gif" width={400} height={400} className="object-contain rounded-full mx-auto"/>
                 <p className="font-medium">Group 18</p>
                 <p className="text-sm">Microsoft • SWEng</p>
               </div>
             </div>
           </div>
 
-          {/* Right Side (Register Form) */}
+          {/* Right Side (Form) */}
           <div className="flex-1 flex flex-col bg-white">
             <div className="flex-1 flex items-center justify-center px-12">
               <div className="w-full max-w-sm space-y-8">
                 <div className="space-y-2">
-                  <h2 className="text-3xl font-bold tracking-tight text-blue-800">Register Account</h2>
-                  <p className="text-gray-500">Create a new user account</p>
+                  <h2 className="text-3xl font-bold tracking-tight text-blue-800">Register a Tenant</h2>
+                  <p className="text-gray-500">Create a new organisation account</p>
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div>
-                    <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                    <label htmlFor="orgName" className="block text-sm font-medium text-gray-700 mb-1">Organisation Name</label>
                     <Input
-                      id="email"
-                      type="email"
-                      placeholder="you@example.com"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
+                      id="orgName"
+                      type="text"
+                      placeholder="Acme Corp"
+                      value={orgName}
+                      onChange={(e) => setOrgName(e.target.value)}
                       required
                     />
                   </div>
 
                   <div>
-                    <label htmlFor="tenantEmail" className="block text-sm font-medium text-gray-700 mb-1">Tenant Email</label>
+                    <label htmlFor="orgEmail" className="block text-sm font-medium text-gray-700 mb-1">Organisation Email</label>
                     <Input
-                      id="tenantEmail"
+                      id="orgEmail"
                       type="email"
-                      placeholder="org@tenant.com"
-                      value={tenantEmail}
-                      onChange={(e) => setTenantEmail(e.target.value)}
-                      required
-                    />
-                  </div>
-
-
-                  <div>
-                    <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">Password</label>
-                    <Input
-                      id="password"
-                      type="password"
-                      placeholder="Create a password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="org@example.com"
+                      value={orgEmail}
+                      onChange={(e) => setOrgEmail(e.target.value)}
                       required
                     />
                   </div>
@@ -132,7 +119,7 @@ export default function RegisterAccountPage() {
                   {error && <p className="text-red-500 text-sm">{error}</p>}
 
                   <Button type="submit" className="w-full bg-blue-600 text-white hover:bg-blue-700" disabled={loading}>
-                    {loading ? "Registering..." : "Register"}
+                    {loading ? "Registering..." : "Register Tenant"}
                   </Button>
                 </form>
               </div>
