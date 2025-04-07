@@ -30,7 +30,7 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-
+import { getTenantIdFromStorage } from "@/hooks/useTenantId";
 import {
   DBApp,
   createApp,
@@ -61,15 +61,29 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({ onAppClick }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
-  // Hardcoded for demonstration
+  // Hardcoded for now, dev
   const userId = 3;
-  const tenantId = 1101;
+  // const tenantId = 1101;
 
   // Track whether we’re in the middle of any API call (fetch apps, refresh, etc.)
   const [isLoading, setIsLoading] = useState(false);
 
-  // === 1) Fetch list of apps
+  const [tenantId, setTenantId] = useState<number | null>(null);
+  // const [userId, setUserId] = useState<number | null>(null);
+
+  // 2) On mount, read from localStorage
+  useEffect(() => {
+    const rawUser = localStorage.getItem("user");
+    if (rawUser) {
+      const userObj = JSON.parse(rawUser);
+      setTenantId(userObj.tenantId);
+      // setUserId(userObj.userId);
+    }
+  }, []);
+
+  // 3) Then in fetchApps, use 'tenantId' from state
   const fetchApps = useCallback(async () => {
+    if (tenantId === null) return;
     setIsLoading(true);
     try {
       const data = await getTenantApps(tenantId);
@@ -86,12 +100,9 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({ onAppClick }) => {
     }
   }, [tenantId, toast]);
 
-  useEffect(() => {
-    fetchApps();
-  }, [fetchApps]);
-
   // === 2) Handle create app + (optionally) upload zip
   const handleCreateApp = async () => {
+    if (tenantId === null) return;
     if (!newApp.name || !newApp.runtime) {
       toast({
         title: "Error",
@@ -134,6 +145,7 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({ onAppClick }) => {
 
   // === 3) Toggle an app’s status (running/stopped)
   const toggleAppStatus = async (appId: number, currentStatus: string) => {
+    if (tenantId === null) return;
     setIsLoading(true);
     try {
       const newStatus = currentStatus === "running" ? "stopped" : "running";
