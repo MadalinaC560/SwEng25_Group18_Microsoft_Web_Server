@@ -1,7 +1,4 @@
 
-// src/components/api.ts
-
-// This interface matches DB.App in your Java code, including tenantId, ownerUserId, etc.
 export interface DBApp {
   appId: number;
   tenantId: number;
@@ -11,6 +8,27 @@ export interface DBApp {
   status: string;     // e.g. "running" or "stopped"
   routes?: string[];  // optional array of routes
 }
+
+// Returns per-app metrics from new endpoint
+export interface AppMetrics {
+  avgResponseTime: number;       // e.g. 52.3 (ms)
+  requestThroughput: number;     // e.g. 100 (lifetime or rolling count)
+  errorRate: number;             // as a percentage, e.g. 3.2
+  availability: number;          // as a percentage, e.g. 96.8
+  performanceData: Array<{
+    time: string;
+    // might consider other fields if time permits
+  }>;
+}
+
+export async function getTenantAppMetrics(tenantId: number, appId: number): Promise<AppMetrics> {
+  const resp = await fetch(`http://localhost:8080/api/tenants/${tenantId}/apps/${appId}/metrics`);
+  if (!resp.ok) {
+    throw new Error(`Failed to fetch metrics for app #${appId} in tenant #${tenantId}; status=${resp.status}`);
+  }
+  return resp.json();
+}
+
 
 // -----------------------
 //  Basic or Global calls
