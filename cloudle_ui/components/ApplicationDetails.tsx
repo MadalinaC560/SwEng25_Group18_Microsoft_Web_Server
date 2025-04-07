@@ -37,334 +37,384 @@ import {
     RefreshCw,
     ChevronLeft,
     ChevronRight,
+    Loader2,
 } from 'lucide-react';
 
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-
-// Import your new api calls
-import { getTenantApp, updateTenantApp, deleteTenantApp } from '@/components/api';
+import {
+  getTenantApp,
+  updateTenantApp,
+  deleteTenantApp,
+  getTenantAppMetrics,
+} from '@/components/api';
 import type { DBApp } from '@/components/api';
+import type { AppMetrics } from '@/components/api';  // the interface from the step above
 
-import { useRealTimeMetrics } from '@/hooks/useRealTimeMetrics';
 import { useToast } from "@/hooks/use-toast";
 
-// You can keep or remove these local "application" fields if your DB doesn't store them
 interface ApplicationData extends Partial<DBApp> {
-    // Additional fields in your UI not in DB
-    sslStatus?: string;
-    appUrl?: string;
+  sslStatus?: string;
+  appUrl?: string;
 }
 
-// The props from your router or parent component
+const SERVER_BASE_URL = process.env.NEXT_PUBLIC_SERVER_BASE_URL || "http://localhost:8080";
+
 interface ApplicationDetailsProps {
-    tenantId: number;
-    appId: number;
-    onBack: () => void;
+  tenantId: number;
+  appId: number;
+  onBack: () => void;
 }
 
-// The main component
-export const ApplicationDetails: React.FC<ApplicationDetailsProps> = ({ tenantId, appId, onBack }) => {
-    // const default_tenantId = 101;
-    tenantId = 101; // gonna have to hardcode it for now
-    const [activeTab, setActiveTab] = useState('overview');
-    const [isLoading, setIsLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
+export const ApplicationDetails: React.FC<ApplicationDetailsProps> = ({
+  tenantId,
+  appId,
+  onBack
+}) => {
+  // Hardcode tenant for demonstration
+  tenantId = 1101;
 
-    // We'll store the single app data + any extra UI fields
-    const [appData, setAppData] = useState<ApplicationData>({
-        appId: 0,
-        tenantId: 0, //gonna hardcode it for now
-        ownerUserId: 0,
-        name: '',
-        runtime: '',
-        status: '',
-        routes: [],
-        sslStatus: '',     // UI-only field
-        appUrl: 'index.html', // UI-only field
-    });
+  const [activeTab, setActiveTab] = useState('overview');
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-    const { toast } = useToast();
+  const [appData, setAppData] = useState<ApplicationData>({
+    appId: 0,
+    tenantId: 0,
+    ownerUserId: 0,
+    name: '',
+    runtime: '',
+    status: '',
+    routes: [],
+    sslStatus: '',
+    appUrl: 'index.html',
+  });
 
-    // For your metrics (unchanged)
-    const { metrics, simulateLoad } = useRealTimeMetrics(
-        appId,
-        appData.status === 'running' // if the DB status is "running"
-    );
 
-    // Example: if you want to delete the app only when user has typed confirm text
-    const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [appMetrics, setAppMetrics] = useState<AppMetrics | null>(null);
+  const [isMetricsLoading, setIsMetricsLoading] = useState(false);
+  const [metricsError, setMetricsError] = useState<string | null>(null);
 
-    // 1) Load single app data from the server
-    const fetchInitialData = useCallback(async () => {
-        setIsLoading(true);
-        setError(null);
+  const { toast } = useToast();
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
 
-        try {
-            // Calls your backend: GET /api/tenants/:tenantId/apps/:appId
-            const dbApp = await getTenantApp(tenantId, appId);
 
-            // If your backend doesn't track "sslStatus" or "appUrl," you can default them
-            setAppData({
-                ...dbApp,
-                sslStatus: 'Active', // or 'Pending', or use logic from the server if you had it
-                appUrl: 'index.html', // example placeholder
-            });
-        } catch (err) {
-            setError("Failed to load application data. Please try again later.");
-            console.error("Error loading initial data:", err);
-        } finally {
-            setIsLoading(false);
-        }
-    }, [tenantId, appId]);
-
-    useEffect(() => {
-        fetchInitialData();
-    }, [fetchInitialData]);
-
-    // 2) Toggle start/stop app
-    const handleToggleStatus = async () => {
-        if (!appData || !appData.appId) return;
-        const newStatus = appData.status === 'running' ? 'stopped' : 'running';
-
-        try {
-            // Calls PUT /api/tenants/:tenantId/apps/:appId with { status: newStatus }
-            const updated = await updateTenantApp(tenantId, appData.appId, { status: newStatus });
-            // We only have name, runtime, status, etc. from DB
-            setAppData(prev => ({
-                ...prev,
-                status: updated.status,
-            }));
-
-            toast({
-                title: "Status Updated",
-                description: `Application is now ${updated.status}`,
-            });
-        } catch (err) {
-            console.error('Error toggling status:', err);
-            toast({
-                title: "Error",
-                description: "Failed to update application status. Please try again.",
-                variant: "destructive",
-            });
-        }
-    };
-
-    // 3) Delete app from Danger Zone
-    const handleDeleteApp = async () => {
-        if (!appData || !appData.appId) return;
-
-        try {
-            await deleteTenantApp(tenantId, appData.appId);
-            toast({
-                title: "Application Deleted",
-                description: `App ${appData.name} has been removed.`,
-            });
-            onBack(); // go back after deleting
-        } catch (err) {
-            console.error('Error deleting app:', err);
-            toast({
-                title: "Error",
-                description: "Failed to delete application. Please try again.",
-                variant: "destructive",
-            });
-        }
-    };
-
-    // 4) Test load (unchanged)
-    const handleTestLoad = () => {
-        if (appData.status !== 'running') return;
-
-        simulateLoad(500);
-        toast({
-            title: "Load Test Started",
-            description: "Simulating 500 requests...",
-        });
-    };
-
-    if (error) {
-        return (
-            <div className="min-h-screen bg-gray-50 p-6">
-                <div className="max-w-7xl mx-auto">
-                    <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                        <h2 className="text-red-800 font-medium">Error</h2>
-                        <p className="text-red-600">{error}</p>
-                        <Button onClick={() => window.location.reload()} className="mt-4">
-                            Retry
-                        </Button>
-                    </div>
-                </div>
-            </div>
-        );
+  const fetchInitialData = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const dbApp = await getTenantApp(tenantId, appId);
+      setAppData({
+        ...dbApp,
+        sslStatus: 'Active',
+        appUrl: 'index.html',
+      });
+    } catch (err) {
+      setError("Failed to load application data. Please try again later.");
+      console.error("Error loading initial data:", err);
+    } finally {
+      setIsLoading(false);
     }
+  }, [tenantId, appId]);
 
-    // The actual UI. Below, we show the final code with your existing markup,
-    // plus updated lines for toggling status & deleting in the Danger Zone.
+  const fetchAppMetrics = useCallback(async () => {
+    setIsMetricsLoading(true);
+    setMetricsError(null);
+    try {
+      const data = await getTenantAppMetrics(tenantId, appId);
+      setAppMetrics(data);
+    } catch (err: unknown) {
+          setMetricsError("Failed to load application metrics...");
+          console.error("Error loading app metrics:", err);
+          if (err instanceof Error) {
+            console.error("Error message:", err.message);
+          }
+        }
+        finally {
+      setIsMetricsLoading(false);
+    }
+  }, [tenantId, appId]);
 
+  useEffect(() => {
+    fetchInitialData();
+    fetchAppMetrics();
+  }, [fetchInitialData, fetchAppMetrics]);
+
+
+  const handleToggleStatus = async () => {
+    if (!appData || !appData.appId) return;
+    const newStatus = appData.status === 'running' ? 'stopped' : 'running';
+
+    try {
+      const updated = await updateTenantApp(tenantId, appData.appId, { status: newStatus });
+      setAppData((prev) => ({
+        ...prev,
+        status: updated.status,
+      }));
+      toast({
+        title: "Status Updated",
+        description: `Application is now ${updated.status}`,
+      });
+    } catch (err) {
+      console.error('Error toggling status:', err);
+      toast({
+        title: "Error",
+        description: "Failed to update application status. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // 1) Create a refresh handler
+const handleRefresh = async () => {
+  // Could handle partial or full refreshing. This calls both:
+  setIsLoading(true);
+  setIsMetricsLoading(true);
+  try {
+    await fetchInitialData();
+    await fetchAppMetrics();
+  } catch (error) {
+    console.error("Error refreshing data:", error);
+  } finally {
+    setIsLoading(false);
+    setIsMetricsLoading(false);
+  }
+};
+
+  /// 1) Add a state variable:
+const [isDeleting, setIsDeleting] = useState(false);
+
+const handleDeleteApp = async () => {
+  if (!appData || !appData.appId) return;
+  setIsDeleting(true);
+  try {
+    await deleteTenantApp(tenantId, appData.appId);
+    toast({
+      title: "Application Deleted",
+      description: `App ${appData.name} has been removed.`,
+    });
+    onBack();
+  } catch (err) {
+    console.error("Error deleting app:", err);
+    toast({
+      title: "Error",
+      description: "Failed to delete application. Please try again.",
+      variant: "destructive",
+    });
+  } finally {
+    setIsDeleting(false);
+  }
+};
+
+
+  // 4) "Test load" sim -- still mocked....
+  const handleTestLoad = () => {
+    if (appData.status !== 'running') return;
+    // Might do something real, or remove if no longer relevant
+    toast({
+      title: "Load Test Started",
+      description: "Simulating 500 requests... (purely local mock)",
+    });
+  };
+
+  if (error) {
     return (
-        <div className="min-h-screen bg-gray-50 p-6">
-            <div className="max-w-7xl mx-auto space-y-6">
-                {/* Header */}
-                <div className="flex items-center gap-4">
-                    <Button variant="ghost" size="icon" onClick={onBack}>
-                        <ArrowLeft className="h-4 w-4" />
-                    </Button>
-                    <div className="flex-1">
-                        <h1 className="text-3xl font-bold">
-                            {isLoading ? 'Loading...' : appData.name}
-                        </h1>
-                        <div className="flex items-center gap-2 mt-1">
-                            <Badge variant={appData.status === 'running' ? 'default' : 'secondary'}>
-                                {appData.status}
-                            </Badge>
-                            {appData.appUrl && (
-                                <a
-                                    href={appData.appUrl}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="text-sm text-gray-500 hover:text-gray-700 flex items-center gap-1"
-                                >
-                                    {appData.appUrl}
-                                    <ExternalLink className="h-3 w-3" />
-                                </a>
-                            )}
-                        </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        {/* Example console button, disabled if loading */}
-                        {/* <Button variant="outline" disabled={isLoading}>
-              <Terminal className="h-4 w-4 mr-2" />
-              Console
-            </Button> */}
+      <div className="min-h-screen bg-gray-50 p-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+            <h2 className="text-red-800 font-medium">Error</h2>
+            <p className="text-red-600">{error}</p>
+            <Button onClick={() => window.location.reload()} className="mt-4">
+              Retry
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
-                        {/* "Test Load" button */}
-                        <Button
-                            variant="outline"
-                            disabled={isLoading || appData.status !== 'running'}
-                            onClick={handleTestLoad}
-                        >
-                            <Activity className="h-4 w-4 mr-2" />
-                            Test Load (500 requests)
-                        </Button>
+  const isAppDataLoading = isLoading;
+  const isAppMetricsLoading = isMetricsLoading;
 
-                        {/* Start/Stop button */}
-                        <Button
-                            variant={appData.status === 'running' ? 'destructive' : 'default'}
-                            disabled={isLoading}
-                            onClick={handleToggleStatus}
-                        >
-                            <Power className="h-4 w-4 mr-2" />
-                            {appData.status === 'running' ? 'Stop' : 'Start'} Application
-                        </Button>
+  return (
+    <div className="min-h-screen bg-gray-50 p-6">
+      <div className="max-w-7xl mx-auto space-y-6">
+
+        {/* Header */}
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" size="icon" onClick={onBack}>
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+          <div className="flex-1">
+            <h1 className="text-3xl font-bold">
+              {isAppDataLoading ? 'Loading...' : appData.name}
+            </h1>
+            <div className="flex items-center gap-2 mt-1">
+              <Badge variant={appData.status === 'running' ? 'default' : 'secondary'}>
+                {appData.status}
+              </Badge>
+              {appData.appId !== 0 && (
+                <a
+                  href={`${SERVER_BASE_URL}/app_${appData.appId}/${appData.appUrl}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm text-gray-500 hover:text-gray-700 flex items-center gap-1"
+                >
+                  {`${SERVER_BASE_URL}/app_${appData.appId}/${appData.appUrl}`}
+                  <ExternalLink className="h-3 w-3" />
+                </a>
+              )}
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+          {/* Refresh button */}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleRefresh}
+            disabled={isLoading || isMetricsLoading}
+          >
+            { (isLoading || isMetricsLoading)
+              ? <RefreshCw className="h-4 w-4 animate-spin" />
+              : <RefreshCw className="h-4 w-4" />
+            }
+          </Button>
+
+          {/* Test Load */}
+          <Button
+            variant="outline"
+            disabled={isAppDataLoading || appData.status !== 'running'}
+            onClick={handleTestLoad}
+          >
+            <Activity className="h-4 w-4 mr-2" />
+            Test Load (500 requests)
+          </Button>
+
+          {/* Start/Stop app */}
+          <Button
+            variant={appData.status === 'running' ? 'destructive' : 'default'}
+            disabled={isAppDataLoading}
+            onClick={handleToggleStatus}
+          >
+            <Power className="h-4 w-4 mr-2" />
+            {appData.status === 'running' ? 'Stop' : 'Start'} Application
+          </Button>
+        </div>
+      </div>
+
+        {/* Tabs */}
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <TabsList>
+            <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="metrics">Metrics</TabsTrigger>
+            <TabsTrigger value="settings">Settings</TabsTrigger>
+            <TabsTrigger value="logs">Logs</TabsTrigger>
+          </TabsList>
+
+          {/* ============== OVERVIEW TAB ============== */}
+          <TabsContent value="overview" className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="flex items-center gap-2">
+                    <Globe className="h-5 w-5 text-blue-500" />
+                    <div>
+                      <p className="text-sm font-medium">Request Throughput</p>
+                      <p className="text-2xl font-bold">
+                        {isAppMetricsLoading || !appMetrics
+                          ? '...'
+                          : appMetrics.requestThroughput
+                        }
+                      </p>
                     </div>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="flex items-center gap-2">
+                    <Activity className="h-5 w-5 text-green-500" />
+                    <div>
+                      <p className="text-sm font-medium">Avg Response Time</p>
+                      <p className="text-2xl font-bold">
+                        {isAppMetricsLoading || !appMetrics
+                          ? '...'
+                          : `${appMetrics.avgResponseTime.toFixed(1)} ms`}
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="flex items-center gap-2">
+                    <AlertCircle className="h-5 w-5 text-red-500" />
+                    <div>
+                      <p className="text-sm font-medium">Error Rate</p>
+                      <p className="text-2xl font-bold">
+                        {isAppMetricsLoading || !appMetrics
+                          ? '...'
+                          : `${appMetrics.errorRate.toFixed(2)}%`}
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="flex items-center gap-2">
+                    <Database className="h-5 w-5 text-purple-500" />
+                    <div>
+                      <p className="text-sm font-medium">Availability</p>
+                      <p className="text-2xl font-bold">
+                        {isAppMetricsLoading || !appMetrics
+                          ? '...'
+                          : `${appMetrics.availability.toFixed(2)}%`}
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Performance Overview</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="h-80">
+                  {metricsError && (
+                    <div className="text-red-500">{metricsError}</div>
+                  )}
+                  {isAppMetricsLoading ? (
+                    <p>Loading chart...</p>
+                  ) : appMetrics && appMetrics.performanceData.length > 0 ? (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={appMetrics.performanceData}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="time" />
+                        <YAxis />
+                        <Tooltip />
+                        <Legend />
+                        <Line
+                          type="monotone"
+                          dataKey="someKeyIfYouHaveIt"
+                          stroke="#8884d8"
+                          name="Response Time (ms)"
+                          dot={false}
+                        />
+                        {/* Add more lines if your performanceData includes other fields */}
+                      </LineChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <p className="text-sm text-gray-500">
+                      No performance data available.
+                    </p>
+                  )}
                 </div>
+              </CardContent>
+            </Card>
 
-                {/* Main Content - (All your existing code below) */}
-                <Tabs value={activeTab} onValueChange={setActiveTab}>
-                    <TabsList>
-                        <TabsTrigger value="overview">Overview</TabsTrigger>
-                        <TabsTrigger value="metrics">Metrics</TabsTrigger>
-                        <TabsTrigger value="settings">Settings</TabsTrigger>
-                        <TabsTrigger value="logs">Logs</TabsTrigger>
-                    </TabsList>
 
-                    {/* ============== OVERVIEW TAB ============== */}
-                    <TabsContent value="overview" className="space-y-6">
-                        {/* Quick Stats */}
-                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                            <Card>
-                                <CardContent className="pt-6">
-                                    <div className="flex items-center gap-2">
-                                        <Globe className="h-5 w-5 text-blue-500" />
-                                        <div>
-                                            <p className="text-sm font-medium">Requests (24h)</p>
-                                            <p className="text-2xl font-bold">
-                                                {isLoading ? '...' : metrics.requests24h.toLocaleString()}
-                                            </p>
-                                        </div>
-                                    </div>
-                                </CardContent>
-                            </Card>
-                            <Card>
-                                <CardContent className="pt-6">
-                                    <div className="flex items-center gap-2">
-                                        <Activity className="h-5 w-5 text-green-500" />
-                                        <div>
-                                            <p className="text-sm font-medium">Avg Response Time</p>
-                                            <p className="text-2xl font-bold">
-                                                {isLoading ? '...' : `${metrics.avgResponseTime.toFixed(1)}ms`}
-                                            </p>
-                                        </div>
-                                    </div>
-                                </CardContent>
-                            </Card>
-                            <Card>
-                                <CardContent className="pt-6">
-                                    <div className="flex items-center gap-2">
-                                        <AlertCircle className="h-5 w-5 text-red-500" />
-                                        <div>
-                                            <p className="text-sm font-medium">Error Rate</p>
-                                            <p className="text-2xl font-bold">
-                                                {isLoading ? '...' : `${(metrics.errorRate * 100).toFixed(2)}%`}
-                                            </p>
-                                        </div>
-                                    </div>
-                                </CardContent>
-                            </Card>
-                            <Card>
-                                <CardContent className="pt-6">
-                                    <div className="flex items-center gap-2">
-                                        <Database className="h-5 w-5 text-purple-500" />
-                                        <div>
-                                            <p className="text-sm font-medium">Storage Used</p>
-                                            <p className="text-2xl font-bold">
-                                                {isLoading ? '...' : `${metrics.storageUsed.toFixed(1)}GB`}
-                                            </p>
-                                        </div>
-                                    </div>
-                                </CardContent>
-                            </Card>
-                        </div>
-
-                        {/* Performance Chart */}
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Performance Overview</CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="h-80">
-                                    <ResponsiveContainer width="100%" height="100%">
-                                        <LineChart data={metrics.performanceData}>
-                                            <CartesianGrid strokeDasharray="3 3" />
-                                            <XAxis dataKey="time" />
-                                            <YAxis yAxisId="left" />
-                                            <YAxis yAxisId="right" orientation="right" />
-                                            <Tooltip />
-                                            <Legend />
-                                            <Line
-                                                yAxisId="left"
-                                                type="monotone"
-                                                dataKey="responseTime"
-                                                stroke="#8884d8"
-                                                name="Response Time (ms)"
-                                                dot={false}
-                                                isAnimationActive={false}
-                                            />
-                                            <Line
-                                                yAxisId="right"
-                                                type="monotone"
-                                                dataKey="requests"
-                                                stroke="#82ca9d"
-                                                name="Requests"
-                                                dot={false}
-                                                isAnimationActive={false}
-                                            />
-                                        </LineChart>
-                                    </ResponsiveContainer>
-                                </div>
-                            </CardContent>
-                        </Card>
-
-                        {/* Application Info */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <Card>
                                 <CardHeader>
@@ -437,231 +487,260 @@ export const ApplicationDetails: React.FC<ApplicationDetailsProps> = ({ tenantId
                         </div>
                     </TabsContent>
 
-                    {/* ============== METRICS TAB ============== */}
-                    <TabsContent value="metrics" className="space-y-6">
 
-                        <Card>
-                            <CardHeader className="flex flex-row items-center justify-between">
-                                <CardTitle>Application Performance</CardTitle>
-                                <Select defaultValue="24h">
-                                    <SelectTrigger className="w-36">
-                                        <SelectValue placeholder="Time Range" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="1h">Last Hour</SelectItem>
-                                        <SelectItem value="6h">Last 6 Hours</SelectItem>
-                                        <SelectItem value="24h">Last 24 Hours</SelectItem>
-                                        <SelectItem value="7d">Last 7 Days</SelectItem>
-                                        <SelectItem value="30d">Last 30 Days</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                                    <div className="flex flex-col space-y-2">
-                                        <span className="text-muted-foreground text-xs">Avg. Response Time</span>
-                                        <div className="flex items-end gap-2">
-                                            <span className="text-2xl font-bold">{metrics.avgResponseTime.toFixed(1)}ms</span>
-                                            <span className="text-xs text-green-500 flex items-center mb-1">
-              -12.4% <ArrowDownRight className="h-3 w-3" />
-            </span>
-                                        </div>
-                                        <div className="h-10">
-                                            <ResponsiveContainer width="100%" height="100%">
-                                                <LineChart data={metrics.performanceData.slice(-12)}>
-                                                    <Line type="monotone" dataKey="responseTime" stroke="#10b981" dot={false} strokeWidth={2} />
-                                                </LineChart>
-                                            </ResponsiveContainer>
-                                        </div>
-                                    </div>
 
-                                    <div className="flex flex-col space-y-2">
-                                        <span className="text-muted-foreground text-xs">Request Throughput</span>
-                                        <div className="flex items-end gap-2">
-                                            <span className="text-2xl font-bold">{Math.round(metrics.requests24h / 24)} req/hr</span>
-                                            <span className="text-xs text-green-500 flex items-center mb-1">
-              +8.2% <ArrowUpRight className="h-3 w-3" />
-            </span>
-                                        </div>
-                                        <div className="h-10">
-                                            <ResponsiveContainer width="100%" height="100%">
-                                                <LineChart data={metrics.performanceData.slice(-12)}>
-                                                    <Line type="monotone" dataKey="requests" stroke="#8884d8" dot={false} strokeWidth={2} />
-                                                </LineChart>
-                                            </ResponsiveContainer>
-                                        </div>
-                                    </div>
+          {/* ============== METRICS TAB ============== */}
+          <TabsContent value="metrics" className="space-y-6">
 
-                                    <div className="flex flex-col space-y-2">
-                                        <span className="text-muted-foreground text-xs">Error Rate</span>
-                                        <div className="flex items-end gap-2">
-                                            <span className="text-2xl font-bold">{(metrics.errorRate * 100).toFixed(2)}%</span>
-                                            <span className="text-xs text-red-500 flex items-center mb-1">
-              +0.8% <ArrowUpRight className="h-3 w-3" />
-            </span>
-                                        </div>
-                                        <div className="h-10">
-                                            <ResponsiveContainer width="100%" height="100%">
-                                                <LineChart data={metrics.performanceData.slice(-12)}>
-                                                    <Line type="monotone" dataKey="errors" stroke="#ef4444" dot={false} strokeWidth={2} />
-                                                </LineChart>
-                                            </ResponsiveContainer>
-                                        </div>
-                                    </div>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <CardTitle>Application Performance</CardTitle>
+                <Select defaultValue="24h">
+                  <SelectTrigger className="w-36">
+                    <SelectValue placeholder="Time Range" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="1h">Last Hour</SelectItem>
+                    <SelectItem value="6h">Last 6 Hours</SelectItem>
+                    <SelectItem value="24h">Last 24 Hours</SelectItem>
+                    <SelectItem value="7d">Last 7 Days</SelectItem>
+                    <SelectItem value="30d">Last 30 Days</SelectItem>
+                  </SelectContent>
+                </Select>
+              </CardHeader>
+              <CardContent>
+                {metricsError && (
+                  <div className="text-red-500">{metricsError}</div>
+                )}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                  <div className="flex flex-col space-y-2">
+                    <span className="text-muted-foreground text-xs">Avg. Response Time</span>
+                    <div className="flex items-end gap-2">
+                      <span className="text-2xl font-bold">
+                        {isAppMetricsLoading || !appMetrics
+                          ? '...'
+                          : `${appMetrics.avgResponseTime.toFixed(1)}ms`
+                        }
+                      </span>
+                      {/* Example little up/down arrow. Hard-coded for now. */}
+                      <span className="text-xs text-green-500 flex items-center mb-1">
+                        -12.4% <ArrowDownRight className="h-3 w-3" />
+                      </span>
+                    </div>
+                    {/* Example small sparkline chart using appMetrics.performanceData */}
+                    <div className="h-10">
+                      {(!appMetrics || appMetrics.performanceData.length === 0) ? (
+                        <p className="text-sm text-gray-400">No data</p>
+                      ) : (
+                        <ResponsiveContainer width="100%" height="100%">
+                          <LineChart data={appMetrics.performanceData.slice(-12)}>
+                            <Line
+                              type="monotone"
+                              dataKey="someKeyIfYouHaveIt"
+                              stroke="#10b981"
+                              dot={false}
+                              strokeWidth={2}
+                            />
+                          </LineChart>
+                        </ResponsiveContainer>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex flex-col space-y-2">
+                    <span className="text-muted-foreground text-xs">Request Throughput</span>
+                    <div className="flex items-end gap-2">
+                      <span className="text-2xl font-bold">
+                        {isAppMetricsLoading || !appMetrics
+                          ? '...'
+                          : `${Math.round(appMetrics.requestThroughput)} total`
+                        }
+                      </span>
+                      <span className="text-xs text-green-500 flex items-center mb-1">
+                        +8.2% <ArrowUpRight className="h-3 w-3" />
+                      </span>
+                    </div>
+                    {/* Similarly a sparkline if you want */}
+                  </div>
+                  <div className="flex flex-col space-y-2">
+                    <span className="text-muted-foreground text-xs">Error Rate</span>
+                    <div className="flex items-end gap-2">
+                      <span className="text-2xl font-bold">
+                        {isAppMetricsLoading || !appMetrics
+                          ? '...'
+                          : `${appMetrics.errorRate.toFixed(2)}%`
+                        }
+                      </span>
+                      <span className="text-xs text-red-500 flex items-center mb-1">
+                        +0.8% <ArrowUpRight className="h-3 w-3" />
+                      </span>
+                    </div>
+                    {/* Another sparkline or something */}
+                  </div>
+                  <div className="flex flex-col space-y-2">
+                    <span className="text-muted-foreground text-xs">Availability</span>
+                    <div className="flex items-end gap-2">
+                      <span className="text-2xl font-bold">
+                        {isAppMetricsLoading || !appMetrics
+                          ? '...'
+                          : `${appMetrics.availability.toFixed(2)}%`
+                        }
+                      </span>
+                      <span className="text-xs text-green-500 flex items-center mb-1">
+                        +0.01% <ArrowUpRight className="h-3 w-3" />
+                      </span>
+                    </div>
+                    <div className="h-10 flex items-end">
+                      {/* For a simple bar showing availability */}
+                      <div className="w-full bg-muted rounded-sm h-2">
+                        <div
+                          className="bg-green-500 h-2 rounded-sm"
+                          style={{
+                            width: appMetrics
+                              ? `${appMetrics.availability.toFixed(2)}%`
+                              : '0%',
+                          }}
+                        ></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
 
-                                    <div className="flex flex-col space-y-2">
-                                        <span className="text-muted-foreground text-xs">Availability</span>
-                                        <div className="flex items-end gap-2">
-                                            <span className="text-2xl font-bold">99.98%</span>
-                                            <span className="text-xs text-green-500 flex items-center mb-1">
-              +0.01% <ArrowUpRight className="h-3 w-3" />
-            </span>
-                                        </div>
-                                        <div className="h-10 flex items-end">
-                                            <div className="w-full bg-muted rounded-sm h-2">
-                                                <div className="bg-green-500 h-2 rounded-sm" style={{ width: '99.98%' }}></div>
-                                            </div>
-                                        </div>
-                                    </div>
+              <Card>
+                      <CardHeader>
+                        <CardTitle>HTTP Method Distribution</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          {/* HTTP Method Distribution */}
+                          <div>
+                            <h3 className="font-medium mb-4">Method Breakdown</h3>
+                            <div className="space-y-3">
+                              <div className="space-y-1">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-sm">GET</span>
+                                  <span className="text-sm font-medium">72.5%</span>
                                 </div>
-                            </CardContent>
-                        </Card>
-
-                        {/* Status Code Distribution */}
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>HTTP Status Codes</CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div>
-                                        <h3 className="font-medium mb-4">Status Code Distribution</h3>
-                                        <div className="space-y-3">
-                                            <div className="space-y-1">
-                                                <div className="flex items-center justify-between">
-                                                    <span className="text-sm">200 OK</span>
-                                                    <span className="text-sm font-medium">94.8%</span>
-                                                </div>
-                                                <div className="h-2 bg-muted rounded-full overflow-hidden">
-                                                    <div className="bg-green-500 h-full rounded-full" style={{ width: '94.8%' }}></div>
-                                                </div>
-                                            </div>
-                                            <div className="space-y-1">
-                                                <div className="flex items-center justify-between">
-                                                    <span className="text-sm">302 Found</span>
-                                                    <span className="text-sm font-medium">2.4%</span>
-                                                </div>
-                                                <div className="h-2 bg-muted rounded-full overflow-hidden">
-                                                    <div className="bg-blue-400 h-full rounded-full" style={{ width: '2.4%' }}></div>
-                                                </div>
-                                            </div>
-                                            <div className="space-y-1">
-                                                <div className="flex items-center justify-between">
-                                                    <span className="text-sm">404 Not Found</span>
-                                                    <span className="text-sm font-medium">2.1%</span>
-                                                </div>
-                                                <div className="h-2 bg-muted rounded-full overflow-hidden">
-                                                    <div className="bg-amber-400 h-full rounded-full" style={{ width: '2.1%' }}></div>
-                                                </div>
-                                            </div>
-                                            <div className="space-y-1">
-                                                <div className="flex items-center justify-between">
-                                                    <span className="text-sm">500 Server Error</span>
-                                                    <span className="text-sm font-medium">0.7%</span>
-                                                </div>
-                                                <div className="h-2 bg-muted rounded-full overflow-hidden">
-                                                    <div className="bg-red-500 h-full rounded-full" style={{ width: '0.7%' }}></div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div>
-                                        <h3 className="font-medium mb-4">Top Endpoints</h3>
-                                        <div className="space-y-3">
-                                            <div className="flex justify-between items-center">
-                                                <div className="flex items-center gap-2">
-                                                    <Badge variant="outline" className="bg-blue-50">GET</Badge>
-                                                    <span className="text-sm font-medium">/api/products</span>
-                                                </div>
-                                                <div className="text-sm text-muted-foreground">
-                                                    242 requests | 87ms avg
-                                                </div>
-                                            </div>
-                                            <div className="flex justify-between items-center">
-                                                <div className="flex items-center gap-2">
-                                                    <Badge variant="outline" className="bg-green-50">POST</Badge>
-                                                    <span className="text-sm font-medium">/api/users/login</span>
-                                                </div>
-                                                <div className="text-sm text-muted-foreground">
-                                                    189 requests | 112ms avg
-                                                </div>
-                                            </div>
-                                            <div className="flex justify-between items-center">
-                                                <div className="flex items-center gap-2">
-                                                    <Badge variant="outline" className="bg-blue-50">GET</Badge>
-                                                    <span className="text-sm font-medium">/api/dashboard</span>
-                                                </div>
-                                                <div className="text-sm text-muted-foreground">
-                                                    156 requests | 95ms avg
-                                                </div>
-                                            </div>
-                                            <div className="flex justify-between items-center">
-                                                <div className="flex items-center gap-2">
-                                                    <Badge variant="outline" className="bg-blue-50">GET</Badge>
-                                                    <span className="text-sm font-medium">/static/images</span>
-                                                </div>
-                                                <div className="text-sm text-muted-foreground">
-                                                    124 requests | 32ms avg
-                                                </div>
-                                            </div>
-                                            <div className="flex justify-between items-center">
-                                                <div className="flex items-center gap-2">
-                                                    <Badge variant="outline" className="bg-purple-50">PUT</Badge>
-                                                    <span className="text-sm font-medium">/api/settings</span>
-                                                </div>
-                                                <div className="text-sm text-muted-foreground">
-                                                    98 requests | 89ms avg
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
+                                <div className="h-2 bg-muted rounded-full overflow-hidden">
+                                  <div
+                                    className="bg-blue-500 h-full rounded-full"
+                                    style={{ width: '72.5%' }}
+                                  ></div>
                                 </div>
-                            </CardContent>
-                        </Card>
+                              </div>
+                              <div className="space-y-1">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-sm">POST</span>
+                                  <span className="text-sm font-medium">17.2%</span>
+                                </div>
+                                <div className="h-2 bg-muted rounded-full overflow-hidden">
+                                  <div
+                                    className="bg-green-500 h-full rounded-full"
+                                    style={{ width: '17.2%' }}
+                                  ></div>
+                                </div>
+                              </div>
+                              <div className="space-y-1">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-sm">PUT</span>
+                                  <span className="text-sm font-medium">7.1%</span>
+                                </div>
+                                <div className="h-2 bg-muted rounded-full overflow-hidden">
+                                  <div
+                                    className="bg-yellow-500 h-full rounded-full"
+                                    style={{ width: '7.1%' }}
+                                  ></div>
+                                </div>
+                              </div>
+                              <div className="space-y-1">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-sm">DELETE</span>
+                                  <span className="text-sm font-medium">3.2%</span>
+                                </div>
+                                <div className="h-2 bg-muted rounded-full overflow-hidden">
+                                  <div
+                                    className="bg-red-500 h-full rounded-full"
+                                    style={{ width: '3.2%' }}
+                                  ></div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* File routes => Show actual file routes from appData.routes */}
+                          <div>
+                            <h3 className="font-medium mb-4">File Routes</h3>
+                            {(!appData.routes || appData.routes.length === 0) ? (
+                              <p className="text-sm text-gray-500">
+                                No routes found for this application.
+                              </p>
+                            ) : (
+                              <div className="space-y-3">
+                                {appData.routes.map((route, index) => (
+                                  <div
+                                    key={index}
+                                    className="flex justify-between items-center"
+                                  >
+
+                                    <div className="flex items-center gap-2">
+                                      <Badge variant="outline" className="bg-blue-50">
+                                        GET
+                                      </Badge>
+                                      <span className="text-sm font-medium">
+                                        {/*  might have to clean the routes being displayed later*/}
+                                        {route}
+                                      </span>
+                                    </div>
+
+                                    <div className="text-sm text-muted-foreground">
+                                      {/*  hardcoded for now, might remove later*/}
+                                      42 requests | 65ms avg
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
 
                         {/* Resource Usage */}
                         <Card>
-                            <CardContent>
-
-                                {/* Bandwidth Usage */}
-                                <div className="mt-3 pt-3">
-                                    <h3 className="font-medium mb-4">Bandwidth Usage</h3>
-                                    <div className="h-64">
-                                        <ResponsiveContainer width="100%" height="100%">
-                                            <LineChart
-                                                data={metrics.performanceData.map(point => ({
-                                                    ...point,
-                                                    inbound: Math.round(point.requests * 0.05),
-                                                    outbound: Math.round(point.requests * 0.25)
-                                                }))}
-                                            >
-                                                <CartesianGrid strokeDasharray="3 3" />
-                                                <XAxis dataKey="time" />
-                                                <YAxis tickFormatter={(value) => `${value}MB`} />
-                                                <Tooltip formatter={(value) => `${value}MB`} />
-                                                <Legend />
-                                                <Line type="monotone" dataKey="inbound" name="Inbound Traffic" stroke="#3b82f6" />
-                                                <Line type="monotone" dataKey="outbound" name="Outbound Traffic" stroke="#f97316" />
-                                            </LineChart>
-                                        </ResponsiveContainer>
-                                    </div>
-                                </div>
-                            </CardContent>
+                          <CardContent>
+                            <div className="mt-3 pt-3">
+                              <h3 className="font-medium mb-4">Bandwidth Usage</h3>
+                              <div className="h-64">
+                                <ResponsiveContainer width="100%" height="100%">
+                                  <LineChart data={appMetrics?.performanceData || []}>
+                                    <CartesianGrid strokeDasharray="3 3" />
+                                    <XAxis dataKey="time" />
+                                    {/* Inbound/outbound stored as MB from Telemetry */}
+                                    <YAxis tickFormatter={(value) => `${value.toFixed(2)}MB`} />
+                                    <Tooltip formatter={(val) => `${(val as number).toFixed(2)} MB`} />
+                                    <Legend />
+                                    <Line
+                                      type="monotone"
+                                      dataKey="inbound"
+                                      name="Inbound Traffic"
+                                      stroke="#3b82f6"
+                                    />
+                                    <Line
+                                      type="monotone"
+                                      dataKey="outbound"
+                                      name="Outbound Traffic"
+                                      stroke="#f97316"
+                                    />
+                                  </LineChart>
+                                </ResponsiveContainer>
+                              </div>
+                            </div>
+                          </CardContent>
                         </Card>
 
 
-                    </TabsContent>
+          </TabsContent>
 
                     {/* ============== SETTINGS TAB ============== */}
                     <TabsContent value="settings">
@@ -785,11 +864,6 @@ export const ApplicationDetails: React.FC<ApplicationDetailsProps> = ({ tenantId
                                 </CardContent>
                             </Card>
                             {/* General Settings */}
-                            {/* ... your existing code, or adapt to let the user rename the app
-                   if you want to call updateTenantApp(...) for name changes */}
-                            {/* SSL Settings */}
-                            {/* ... code from snippet above */}
-                            {/* Danger Zone */}
                             <Card className="border-destructive">
                                 <CardHeader className="text-destructive">
                                     <CardTitle>Danger Zone</CardTitle>
@@ -837,24 +911,34 @@ export const ApplicationDetails: React.FC<ApplicationDetailsProps> = ({ tenantId
                                                         </div>
                                                     </div>
                                                     <DialogFooter>
-                                                        <Button variant="outline">Cancel</Button>
-                                                        <Button
-                                                            variant="destructive"
-                                                            onClick={() => {
-                                                                // Only proceed if user typed the exact name
-                                                                if (deleteConfirmText === appData.name) {
-                                                                    handleDeleteApp();
-                                                                } else {
-                                                                    toast({
-                                                                        title: "Confirmation mismatch",
-                                                                        description: "Please type the app name exactly to confirm.",
-                                                                        variant: "destructive",
-                                                                    });
-                                                                }
-                                                            }}
-                                                        >
-                                                            Delete Permanently
-                                                        </Button>
+                                                      <Button variant="outline" onClick={() => setIsDeleting(false)}>
+                                                        Cancel
+                                                      </Button>
+                                                      <Button
+                                                        variant="destructive"
+                                                        disabled={isDeleting} // disable if deleting
+                                                        onClick={() => {
+                                                          if (deleteConfirmText === appData.name) {
+                                                            handleDeleteApp();
+                                                          } else {
+                                                            toast({
+                                                              title: "Confirmation mismatch",
+                                                              description: "Please type the app name exactly to confirm.",
+                                                              variant: "destructive",
+                                                            });
+                                                          }
+                                                        }}
+                                                      >
+                                                        {/* 3) Show spinner text if isDeleting is true */}
+                                                        {isDeleting ? (
+                                                          <>
+                                                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                                            Deleting...
+                                                          </>
+                                                        ) : (
+                                                          "Delete Permanently"
+                                                        )}
+                                                      </Button>
                                                     </DialogFooter>
                                                 </DialogContent>
                                             </Dialog>
@@ -1126,3 +1210,4 @@ export const ApplicationDetails: React.FC<ApplicationDetailsProps> = ({ tenantId
 };
 
 export default ApplicationDetails;
+

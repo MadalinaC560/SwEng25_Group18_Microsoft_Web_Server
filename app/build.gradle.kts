@@ -20,6 +20,7 @@ dependencies {
 
     implementation("org.slf4j:slf4j-simple:2.0.9")
 
+    implementation("com.microsoft.sqlserver:mssql-jdbc:10.2.0.jre17")
 
     // Azure stk bom
     implementation(platform("com.azure:azure-sdk-bom:1.2.32"))
