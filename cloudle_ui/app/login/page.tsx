@@ -1,50 +1,52 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import Image from 'next/image';
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import Image from "next/image";
 import myGif from "@/public/web-browser.gif";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Cloud } from 'lucide-react';
+import { Cloud } from "lucide-react";
 
 export default function LoginPage() {
   const router = useRouter();
 
-  const [tenantEmail, setTenantEmail] = useState('');
-  const [userEmail, setUserEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  // Form fields
+  const [tenantEmail, setTenantEmail] = useState("");
+  const [userName, setUserName] = useState("");
+  const [password, setPassword] = useState("");
+
+  // UI states
+  const [errorMessage, setErrorMessage] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setErrorMessage("");
     setLoading(true);
-    setError('');
 
     try {
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          tenantEmail,
-          userEmail,
-          password,
-        }),
+      const res = await fetch("http://localhost:8080/api/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tenantEmail, username: userName, password }),
       });
 
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error);
+      if (!res.ok) {
+        const errText = await res.text();
+        setErrorMessage(`Login failed: ${errText}`);
+        return;
+      }
 
-      localStorage.setItem('token', data.token);
-      localStorage.setItem('isAuthenticated', 'true');
-
-      router.push('/');
-    } catch (err: unknown) {
-      if (err instanceof Error) {
-        setError(err.message);
+      const userData = await res.json();
+      localStorage.setItem("user", JSON.stringify(userData));
+      localStorage.setItem("isAuthenticated", "true");
+      router.push("/");
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        setErrorMessage(`Error: ${error.message}`);
       } else {
-        setError('Something went wrong.');
+        setErrorMessage("Unknown error occurred");
       }
     } finally {
       setLoading(false);
@@ -52,11 +54,11 @@ export default function LoginPage() {
   };
 
   const handleRegister = () => {
-    router.push('/register_account');
+    router.push("/register_account");
   };
 
   const handleHome = () => {
-    router.push('/landing');
+    router.push("/landing");
   };
 
   return (
@@ -85,14 +87,28 @@ export default function LoginPage() {
           <div className="w-[470px] bg-blue-600 p-10 flex flex-col justify-between text-white">
             <div>
               <div className="flex items-center space-x-2">
-                <Image src="/static/images/Cloudl.png" alt="Cloudle Logo" width={48} height={48} className="object-contain" />
+                <Image
+                  src="/static/images/Cloudl.png"
+                  alt="Cloudle Logo"
+                  width={48}
+                  height={48}
+                  className="object-contain"
+                />
                 <h1 className="text-xl font-semibold">Cloudle</h1>
               </div>
             </div>
             <div className="space-y-4">
-              <blockquote className="text-2xl font-medium leading-relaxed">Cloud first Web Server</blockquote>
+              <blockquote className="text-2xl font-medium leading-relaxed">
+                Cloud first Web Server
+              </blockquote>
               <div className="text-white/60">
-                <Image src={myGif} alt="login gif" width={400} height={400} className="object-contain rounded-full mx-auto"/>
+                <Image
+                  src={myGif}
+                  alt="login gif"
+                  width={400}
+                  height={400}
+                  className="object-contain rounded-full mx-auto"
+                />
                 <p className="font-medium">Group 18</p>
                 <p className="text-sm">Microsoft • SWEng</p>
               </div>
@@ -104,13 +120,22 @@ export default function LoginPage() {
             <div className="flex-1 flex items-center justify-center px-12">
               <div className="w-full max-w-sm space-y-8">
                 <div className="space-y-2">
-                  <h2 className="text-3xl font-bold tracking-tight text-blue-800">User Login</h2>
-                  <p className="text-gray-500">Log in with your org email and credentials</p>
+                  <h2 className="text-3xl font-bold tracking-tight text-blue-800">
+                    User Login
+                  </h2>
+                  <p className="text-gray-500">
+                    Log in with your org email and credentials
+                  </p>
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div>
-                    <label htmlFor="tenantEmail" className="block text-sm font-medium text-gray-700 mb-1">Tenant Org Email</label>
+                    <label
+                      htmlFor="tenantEmail"
+                      className="block text-sm font-medium text-gray-700 mb-1"
+                    >
+                      Tenant Org Email
+                    </label>
                     <Input
                       id="tenantEmail"
                       type="email"
@@ -118,36 +143,44 @@ export default function LoginPage() {
                       value={tenantEmail}
                       onChange={(e) => setTenantEmail(e.target.value)}
                       required
-                      
                     />
                   </div>
 
                   <div className="text-sm text-center text-gray-500">
-                      Want to create a new tenant organisation?{' '}
-                      <button
-                        type="button"
-                        onClick={() => router.push('/create_tenant')}
-                        className="text-blue-600 hover:underline font-medium"
-                      >
-                        Register Tenant
-                      </button>
-                    </div>
-
+                    Want to create a new tenant organisation?{" "}
+                    <button
+                      type="button"
+                      onClick={() => router.push("/create_tenant")}
+                      className="text-blue-600 hover:underline font-medium"
+                    >
+                      Register Tenant
+                    </button>
+                  </div>
 
                   <div>
-                    <label htmlFor="userEmail" className="block text-sm font-medium text-gray-700 mb-1">User Email</label>
+                    <label
+                      htmlFor="userName"
+                      className="block text-sm font-medium text-gray-700 mb-1"
+                    >
+                      User Name
+                    </label>
                     <Input
-                      id="userEmail"
-                      type="email"
-                      placeholder="user@email.com"
-                      value={userEmail}
-                      onChange={(e) => setUserEmail(e.target.value)}
+                      id="userName"
+                      type="text"
+                      placeholder="Enter your username"
+                      value={userName}
+                      onChange={(e) => setUserName(e.target.value)}
                       required
                     />
                   </div>
 
                   <div>
-                    <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                    <label
+                      htmlFor="password"
+                      className="block text-sm font-medium text-gray-700 mb-1"
+                    >
+                      Password
+                    </label>
                     <Input
                       id="password"
                       type="password"
@@ -158,7 +191,9 @@ export default function LoginPage() {
                     />
                   </div>
 
-                  {error && <p className="text-red-500 text-sm">{error}</p>}
+                  {errorMessage && (
+                    <p className="text-red-500 text-sm">{errorMessage}</p>
+                  )}
 
                   <Button
                     type="submit"
@@ -189,10 +224,21 @@ export default function LoginPage() {
             </div>
 
             <div className="p-6 text-center text-sm text-gray-500">
-              By clicking continue, you agree to our{' '}
-              <a href="#" className="underline underline-offset-4 hover:text-blue-800">Terms of Service</a>{' '}
-              and{' '}
-              <a href="#" className="underline underline-offset-4 hover:text-blue-800">Privacy Policy</a>.
+              By clicking continue, you agree to our{" "}
+              <a
+                href="#"
+                className="underline underline-offset-4 hover:text-blue-800"
+              >
+                Terms of Service
+              </a>{" "}
+              and{" "}
+              <a
+                href="#"
+                className="underline underline-offset-4 hover:text-blue-800"
+              >
+                Privacy Policy
+              </a>
+              .
             </div>
           </div>
         </div>
