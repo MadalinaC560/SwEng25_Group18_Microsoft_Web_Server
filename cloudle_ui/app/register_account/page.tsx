@@ -58,9 +58,13 @@ const handleSubmit = async (e: React.FormEvent) => {
     // Success! Redirect to login
     router.push('/login');
 
-  } catch (err: any) {
+  } catch (err) {
+  if (err instanceof Error) {
     setError(err.message || 'Something went wrong.');
-  } finally {
+  } else {
+    setError('Something went wrong.');
+  }
+} finally {
     setLoading(false);
   }
 };
