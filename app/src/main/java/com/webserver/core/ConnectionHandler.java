@@ -181,18 +181,363 @@ public class ConnectionHandler implements Runnable {
     }
 
     private void defineRoutes() {
-        // root, /api/tenants, /api/apps, etc. (unchanged)...
+        // Root route
+        processor.addRoute("/", req -> {
+            if ("OPTIONS".equalsIgnoreCase(req.getMethod())) {
+                return createCorsOk();
+            }
+            return new HttpResponse.Builder()
+                    .setStatusCode(200)
+                    .addHeader("Access-Control-Allow-Origin", "*")
+                    .addHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+                    .addHeader("Access-Control-Allow-Headers", "Content-Type")
+                    .addHeader("Content-Type", "text/plain")
+                    .setBody("Welcome to Cloudle Web Server!")
+                    .build();
+        });
 
         // Add a route for app-level metrics: e.g. /api/tenants/101/apps/2002/metrics
         // We'll handle it in handleTenantsRoute with a new method handleTenantAppMetrics
         processor.addRoute("/api/tenants", this::handleTenantsRoute);
 
-        // Also /api/metrics is the old global endpoint
+//        // Apps
+        processor.addRoute("/api/apps", this::handleAppsCollection);
+        processor.addRoute("/api/apps/", this::handleAppSubpaths);
+//
+//        // Refresh
+        processor.addRoute("/api/refresh", this::handleRefresh);
+
+        // Metrics
         processor.addRoute("/api/metrics", this::handleMetrics);
 
+        // Login
+        processor.addRoute("/api/login", this::handleLogin);
+
+        // Create user
+        processor.addRoute("/api/users", (request) -> {
+            // 1) If it's CORS preflight
+            if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
+                return createCorsOk();
+            }
+
+            // 2) Must be POST
+            if (!"POST".equalsIgnoreCase(request.getMethod())) {
+                return createError(405, "Method Not Allowed");
+            }
+
+            // 3) Parse JSON from the request body
+            Map<String, Object> body = parseJsonMap(request.getTextBody());
+            Double tenantIdDbl = (Double) body.get("tenantId");
+            String username = (String) body.get("username");
+            String role = (String) body.get("role");
+            String password = (String) body.get("password");
+
+            if (tenantIdDbl == null || username == null || password == null || role == null) {
+                return createError(400, "Missing one or more fields: tenantId, username, role, password");
+            }
+
+            int tenantId = tenantIdDbl.intValue();
+
+            // 4) Hash password
+            String hashed = DB.hashPassword(password);
+
+            // 5) Create a new User object
+            DB.User newUser = new DB.User();
+            newUser.userId = generateUserId();
+            newUser.tenantId = tenantId;
+            newUser.username = username;
+            newUser.role = role;
+            newUser.passwordHash = hashed;
+
+            // ### CHANGED: row-level insert, no DB.save()
+            DB.createUser(newUser);
+
+            // 8) Return success
+            Map<String,Object> resp = new HashMap<>();
+            resp.put("userId", newUser.userId);
+            resp.put("tenantId", newUser.tenantId);
+            resp.put("username", newUser.username);
+            resp.put("role", newUser.role);
+            return createJsonResponse(201, toJson(resp));
+        });
     }
 
-    // Existing handleTenantsRoute. We'll add a piece for "metrics"
+     //--------------------------------------------------------------------------
+    // /api/refresh => reload DB from Azure
+    //--------------------------------------------------------------------------
+    private HttpResponse handleRefresh(HttpRequest request) {
+        if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
+            return createCorsOk();
+        }
+        if (!"POST".equalsIgnoreCase(request.getMethod())) {
+            return createError(405, "Method Not Allowed");
+        }
+
+        // Just re-load the in-memory snapshot from DB
+        DB.load();
+
+        return new HttpResponse.Builder()
+                .setStatusCode(200)
+                .addHeader("Access-Control-Allow-Origin", "*")
+                .addHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+                .addHeader("Access-Control-Allow-Headers", "Content-Type")
+                .addHeader("Content-Type", "text/plain")
+                .setBody("DB reloaded from Azure SQL")
+                .build();
+    }
+
+    //--------------------------------------------------------------------------
+    // /api/apps
+    //--------------------------------------------------------------------------
+    private HttpResponse handleAppsCollection(HttpRequest request) {
+        if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
+            return createCorsOk();
+        }
+
+        String method = request.getMethod().toUpperCase();
+        if ("GET".equals(method)) {
+            // ### CHANGED:
+            List<DB.App> allApps = DB.listAllApps();
+            return createJsonResponse(200, toJson(allApps));
+        }
+        return createError(405, "Method Not Allowed");
+    }
+
+    private HttpResponse handleAppSubpaths(HttpRequest request) {
+        if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
+            return createCorsOk();
+        }
+
+        String path = request.getPath(); // e.g. /api/apps/1000
+        String subPath = path.substring("/api/apps".length());
+        if (subPath.startsWith("/")) {
+            subPath = subPath.substring(1);
+        }
+        if (subPath.isEmpty()) {
+            return createError(404, "Not Found");
+        }
+        String[] parts = subPath.split("/");
+        if (parts.length == 1) {
+            // /api/apps/{id}
+            return handleSingleApp(request, parts[0]);
+        } else if (parts.length == 2) {
+            // /api/apps/{id}/status or /upload
+            String appIdStr = parts[0];
+            String action = parts[1].toLowerCase();
+            if ("status".equals(action)) {
+                return handleAppStatus(request, appIdStr);
+            } else if ("upload".equals(action)) {
+                return handleUploadZip(request, appIdStr);
+            } else {
+                return createError(404, "Not Found");
+            }
+        }
+        return createError(404, "Not Found");
+    }
+
+        private HttpResponse handleSingleApp(HttpRequest request, String appIdStr) {
+        if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
+            return createCorsOk();
+        }
+
+        int appId;
+        try {
+            appId = Integer.parseInt(appIdStr);
+        } catch (NumberFormatException e) {
+            return createError(400, "Invalid appId");
+        }
+
+        DB.App theApp = DB.findAppById(appId);
+        String method = request.getMethod().toUpperCase();
+        switch (method) {
+            case "GET":
+                if (theApp == null) {
+                    return createError(404, "App not found");
+                }
+                return createJsonResponse(200, toJson(theApp));
+            case "PUT":
+                if (theApp == null) {
+                    return createError(404, "App not found");
+                }
+                Map<String, Object> body = parseJsonMap(request.getTextBody());
+                String newName = (String) body.get("name");
+                String newRuntime = (String) body.get("runtime");
+                if (newName != null) {
+                    theApp.name = newName;
+                }
+                if (newRuntime != null) {
+                    theApp.runtime = newRuntime;
+                }
+                DB.updateApp(theApp);
+                return createJsonResponse(200, toJson(theApp));
+            case "DELETE":
+                if (theApp == null) {
+                    return createError(404, "App not found");
+                }
+                DB.deleteApp(appId);
+                return createJsonResponse(204, "");
+            default:
+                return createError(405, "Method Not Allowed");
+        }
+    }
+
+    private HttpResponse handleAppStatus(HttpRequest request, String appIdStr) {
+        if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
+            return createCorsOk();
+        }
+        int appId;
+        try {
+            appId = Integer.parseInt(appIdStr);
+        } catch (NumberFormatException e) {
+            return createError(400, "Invalid appId");
+        }
+
+        DB.App theApp = DB.findAppById(appId);
+        if (theApp == null) {
+            return createError(404, "App not found");
+        }
+        if (!"PUT".equalsIgnoreCase(request.getMethod())) {
+            return createError(405, "Method Not Allowed");
+        }
+
+        Map<String, Object> json = parseJsonMap(request.getTextBody());
+        String newStatus = (String) json.get("status");
+        if (newStatus == null) {
+            return createError(400, "Missing status");
+        }
+
+        theApp.status = newStatus;
+        DB.updateApp(theApp);
+        return createJsonResponse(200, toJson(theApp));
+    }
+
+    private HttpResponse handleUploadZip(HttpRequest request, String appIdStr) {
+        if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
+            return createCorsOk();
+        }
+        if (!"POST".equalsIgnoreCase(request.getMethod())) {
+            return createError(405, "Method Not Allowed");
+        }
+
+        int appId;
+        try {
+            appId = Integer.parseInt(appIdStr);
+        } catch (NumberFormatException e) {
+            return createError(400, "Invalid appId");
+        }
+        DB.App theApp = DB.findAppById(appId);
+        if (theApp == null) {
+            return createError(404, "App not found");
+        }
+
+        byte[] rawBody = request.getRawBody();
+        if (rawBody == null || rawBody.length == 0) {
+            return createError(400, "No ZIP data in request body");
+        }
+
+        try (InputStream zipStream = new ByteArrayInputStream(rawBody)) {
+            List<String> extractedFiles = azureInterface.upload(appId, zipStream);
+
+            for (String filename : extractedFiles) {
+                String route = "/app_" + appId + "/" + filename;
+                theApp.routes.add(route);
+
+                processor.addRoute(route, (req) -> {
+                    if ("OPTIONS".equalsIgnoreCase(req.getMethod())) {
+                        return createCorsOk();
+                    }
+                    try (InputStream is = azureInterface.download(appId, "/" + filename)) {
+                        if (is == null) {
+                            return createError(404, "File not found in Azure: " + filename);
+                        }
+                        byte[] fileContent = is.readAllBytes();
+                        String mime = MimeTypes.getMimeType(filename);
+                        return new HttpResponse.Builder()
+                                .setStatusCode(200)
+                                .addHeader("Access-Control-Allow-Origin", "*")
+                                .addHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+                                .addHeader("Access-Control-Allow-Headers", "Content-Type")
+                                .addHeader("Content-Type", mime)
+                                .setRawBody(fileContent)
+                                .build();
+                    } catch (Exception e) {
+                        return createError(500, "Azure download error: " + e.getMessage());
+                    }
+                });
+            }
+            DB.updateApp(theApp);
+
+            Map<String, Object> resp = new HashMap<>();
+            resp.put("appId", appId);
+            resp.put("message", "Upload success");
+            resp.put("updatedRoutes", theApp.routes);
+            return createJsonResponse(200, toJson(resp));
+
+        } catch (Exception e) {
+            return createError(500, "Error uploading ZIP: " + e.getMessage());
+        }
+    }
+
+
+
+
+    //--------------------------------------------------------------------------
+    // /api/login
+    //--------------------------------------------------------------------------
+    private HttpResponse handleLogin(HttpRequest request) {
+        if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
+            return createCorsOk();
+        }
+        if (!"POST".equalsIgnoreCase(request.getMethod())) {
+            return createError(405, "Method Not Allowed");
+        }
+
+        // Parse JSON from body
+        Map<String, Object> body = parseJsonMap(request.getTextBody());
+        String tenantEmail = (String) body.get("tenantEmail");
+        String username    = (String) body.get("username");
+        String password    = (String) body.get("password");
+
+        if (tenantEmail == null || username == null || password == null) {
+            return createError(400, "Missing tenantEmail, username, or password");
+        }
+
+        // 1) Find tenant by email
+        DB.Tenant tenant = DB.findTenantByEmail(tenantEmail);
+        if (tenant == null) {
+            return createError(401, "Invalid tenant email");
+        }
+
+        // 2) Find user by username
+        DB.User user = DB.findUserByUsername(username);
+        if (user == null) {
+            return createError(401, "Invalid credentials");
+        }
+
+        // 3) Check if user is part of that tenant
+        if (user.tenantId != tenant.tenantId) {
+            return createError(403, "User does not belong to this tenant");
+        }
+
+        // 4) Check password
+        boolean valid = DB.checkPassword(password, user.passwordHash);
+        if (!valid) {
+            return createError(401, "Invalid credentials");
+        }
+
+        // Success
+        Map<String, Object> data = new HashMap<>();
+        data.put("userId", user.userId);
+        data.put("tenantId", tenant.tenantId);
+        data.put("role", user.role);
+        data.put("tenantName", tenant.tenantName);
+
+        return createJsonResponse(200, toJson(data));
+    }
+
+    //--------------------------------------------------------------------------
+    // /api/tenants
+    //--------------------------------------------------------------------------
     private HttpResponse handleTenantsRoute(HttpRequest request) {
         String path = request.getBasePath(); // /api/tenants or /api/tenants/101/apps/2002/metrics
         String method = request.getMethod().toUpperCase();
@@ -202,15 +547,20 @@ public class ConnectionHandler implements Runnable {
                 return createCorsOk();
             }
             switch (method) {
-                case "GET": return listTenants();
-                case "POST": return createTenant(request);
-                default: return createError(405, "Method Not Allowed");
+                case "GET":
+                    return listTenants();
+                case "POST":
+                    return createTenant(request);
+                default:
+                    return createError(405, "Method Not Allowed");
             }
         }
 
-        // parse subpath
-        String subPath = path.substring("/api/tenants".length());
-        if (subPath.startsWith("/")) subPath = subPath.substring(1);
+        // Otherwise, subpaths. e.g. /api/tenants/101/apps/2002
+        String subPath = path.substring("/api/tenants".length()); // => /101/apps/2002
+        if (subPath.startsWith("/")) {
+            subPath = subPath.substring(1); // => 101/apps/2002
+        }
         if (subPath.isEmpty()) {
             return createError(404, "Not Found");
         }
@@ -243,7 +593,7 @@ public class ConnectionHandler implements Runnable {
 
         return createError(404, "Not Found");
     }
-
+    
     private HttpResponse handleSingleTenant(HttpRequest request, String tenantIdStr) {
     if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
         return createCorsOk();
