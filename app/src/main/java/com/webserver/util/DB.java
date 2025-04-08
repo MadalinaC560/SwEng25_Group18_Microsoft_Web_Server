@@ -184,6 +184,32 @@ public class DB {
     return results;
 }
 
+    public static synchronized List<User> findUsersByTenantId(int tenantId) {
+    loadDbConfig();
+    List<User> results = new ArrayList<>();
+
+    String sql = "SELECT userId, tenantId, username, role, passwordHash FROM Users WHERE tenantId = ?";
+    try (Connection conn = DriverManager.getConnection(dbUrl, dbUser, dbPassword);
+         PreparedStatement ps = conn.prepareStatement(sql)) {
+
+        ps.setInt(1, tenantId);
+        try (ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                User u = new User();
+                u.userId       = rs.getInt("userId");
+                u.tenantId     = rs.getInt("tenantId");
+                u.username     = rs.getString("username");
+                u.role         = rs.getString("role");
+                u.passwordHash = rs.getString("passwordHash");
+                results.add(u);
+            }
+        }
+    } catch (Exception e) {
+        System.err.println("findUsersByTenantId error: " + e.getMessage());
+    }
+    return results;
+}
+
 
     /**
      * This is our in-memory model. We still have it in case
@@ -312,30 +338,33 @@ public class DB {
     // ------------------------------------------------------------------------------------
     //  TENANT CRUD
     // ------------------------------------------------------------------------------------
+
     public static synchronized Tenant createTenant(Tenant t) {
-        loadDbConfig();
-        if (t == null) return null;
-        String sql = "INSERT INTO Tenants (tenantId, tenantName) VALUES (?, ?)";
-        // Or if tenantId is auto-generated, do not supply tenantId
+    loadDbConfig();
+    if (t == null) return null;
 
-        try (Connection conn = DriverManager.getConnection(dbUrl, dbUser, dbPassword);
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+    // Update SQL to include tenantEmail
+    String sql = "INSERT INTO Tenants (tenantId, tenantName, tenantEmail) VALUES (?, ?, ?)";
 
-            ps.setInt(1, t.tenantId);
-            ps.setString(2, t.tenantName);
-            ps.executeUpdate();
+    try (Connection conn = DriverManager.getConnection(dbUrl, dbUser, dbPassword);
+         PreparedStatement ps = conn.prepareStatement(sql)) {
 
-            // Also add to in-memory
-            if (rootCache != null) {
-                rootCache.tenants.add(t);
-            }
+        ps.setInt(1, t.tenantId);
+        ps.setString(2, t.tenantName);
+        ps.setString(3, t.tenantEmail); // Add this line
+        ps.executeUpdate();
 
-            return t;
-        } catch (Exception e) {
-            System.err.println("createTenant error: " + e.getMessage());
-            return null;
+        // Also add to in-memory
+        if (rootCache != null) {
+            rootCache.tenants.add(t);
         }
+
+        return t;
+    } catch (Exception e) {
+        System.err.println("createTenant error: " + e.getMessage());
+        return null;
     }
+}
 
     public static synchronized Tenant updateTenant(Tenant t) {
         loadDbConfig();
@@ -811,6 +840,7 @@ public class DB {
         dbUrl      = config.get("db.url");
         dbUser     = config.get("db.user");
         dbPassword = config.get("db.password");
+
 
         System.out.println("DB config loaded: " + dbUrl);
     }

@@ -213,56 +213,150 @@ public class ConnectionHandler implements Runnable {
         // Login
         processor.addRoute("/api/login", this::handleLogin);
 
-        // Create user
+        processor.addRoute("/api/tenants/usage", this::handleTenantsUsage);
+
+
+
         processor.addRoute("/api/users", (request) -> {
-            // 1) If it's CORS preflight
+    // 1) If it's CORS preflight
+    if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
+        return createCorsOk();
+    }
+
+    // 2) Must be POST
+    if (!"POST".equalsIgnoreCase(request.getMethod())) {
+        return createError(405, "Method Not Allowed");
+    }
+
+    // 3) Parse JSON from the request body
+    Map<String, Object> body = parseJsonMap(request.getTextBody());
+    Double tenantIdDbl = (Double) body.get("tenantId");
+    String username = (String) body.get("username");
+    String role = (String) body.get("role");
+    String password = (String) body.get("password");
+
+    if (tenantIdDbl == null || username == null || password == null || role == null) {
+        return createError(400, "Missing one or more fields: tenantId, username, role, password");
+    }
+
+    int tenantId = tenantIdDbl.intValue();
+
+    // Check if username already exists
+    DB.User existingUser = DB.findUserByUsername(username);
+    if (existingUser != null) {
+        return createError(409, "Username already exists");
+    }
+
+    // 4) Hash password
+    String hashed = DB.hashPassword(password);
+
+    // 5) Create a new User object
+    DB.User newUser = new DB.User();
+    newUser.userId = generateUserId();
+    newUser.tenantId = tenantId;
+    newUser.username = username;
+
+    // Check if this is the first user for this tenant - they become admin
+    List<DB.User> tenantUsers = DB.findUsersByTenantId(tenantId);
+    if (tenantUsers.isEmpty()) {
+        // First user gets admin role
+        newUser.role = "admin";
+    } else {
+        // Otherwise use provided role
+        newUser.role = role;
+    }
+
+    newUser.passwordHash = hashed;
+
+    // ### CHANGED: row-level insert, no DB.save()
+    DB.createUser(newUser);
+
+    // 8) Return success
+    Map<String,Object> resp = new HashMap<>();
+    resp.put("userId", newUser.userId);
+    resp.put("tenantId", newUser.tenantId);
+    resp.put("username", newUser.username);
+    resp.put("role", newUser.role);
+    resp.put("message", "Account created successfully");
+    return createJsonResponse(201, toJson(resp));
+});
+        processor.addRoute("/api/tenants/lookup", (request) -> {
+    if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
+        return createCorsOk();
+    }
+
+    if (!"GET".equalsIgnoreCase(request.getMethod())) {
+        return createError(405, "Method Not Allowed");
+    }
+
+    // Extract email from query parameters
+    String path = request.getPath();
+    String email = null;
+
+    if (path.contains("?email=")) {
+        email = path.substring(path.indexOf("?email=") + 7);
+        // Handle URL encoding if needed
+        if (email.contains("%")) {
+            try {
+                email = java.net.URLDecoder.decode(email, "UTF-8");
+            } catch (Exception e) {
+                // Just use as is if decoding fails
+            }
+        }
+    }
+
+    if (email == null || email.isEmpty()) {
+        return createError(400, "Email parameter is required");
+    }
+
+    DB.Tenant tenant = DB.findTenantByEmail(email);
+    if (tenant == null) {
+        return createError(404, "Tenant with email " + email + " not found");
+    }
+
+    return createJsonResponse(200, toJson(tenant));
+});
+    }
+
+    // Then add this method to ConnectionHandler.java
+        private HttpResponse handleTenantsUsage(HttpRequest request) {
             if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
                 return createCorsOk();
             }
 
-            // 2) Must be POST
-            if (!"POST".equalsIgnoreCase(request.getMethod())) {
+            if (!"GET".equalsIgnoreCase(request.getMethod())) {
                 return createError(405, "Method Not Allowed");
             }
 
-            // 3) Parse JSON from the request body
-            Map<String, Object> body = parseJsonMap(request.getTextBody());
-            Double tenantIdDbl = (Double) body.get("tenantId");
-            String username = (String) body.get("username");
-            String role = (String) body.get("role");
-            String password = (String) body.get("password");
+            List<Map<String, Object>> tenantsUsage = new ArrayList<>();
 
-            if (tenantIdDbl == null || username == null || password == null || role == null) {
-                return createError(400, "Missing one or more fields: tenantId, username, role, password");
+            // Get all tenants
+            List<DB.Tenant> tenants = DB.listAllTenants();
+
+            // Calculate metrics for each tenant
+            for (DB.Tenant tenant : tenants) {
+                // Get apps for this tenant
+                List<DB.App> tenantApps = DB.listAppsForTenant(tenant.tenantId);
+
+                // Calculate CPU usage (for simplicity, assigning 2 cores per app)
+                int cpuCores = tenantApps.size() * 2;
+                // Calculate memory usage (for simplicity, assigning 4GB per app)
+                int memoryGB = tenantApps.size() * 4;
+
+                Map<String, Object> tenantUsage = new HashMap<>();
+                tenantUsage.put("tenantId", tenant.tenantId);
+                tenantUsage.put("tenantName", tenant.tenantName);
+                tenantUsage.put("apps", tenantApps.size());
+                tenantUsage.put("cpu", cpuCores);
+                tenantUsage.put("memory", memoryGB);
+
+                tenantsUsage.add(tenantUsage);
             }
 
-            int tenantId = tenantIdDbl.intValue();
+            return createJsonResponse(200, toJson(tenantsUsage));
+        }
 
-            // 4) Hash password
-            String hashed = DB.hashPassword(password);
-
-            // 5) Create a new User object
-            DB.User newUser = new DB.User();
-            newUser.userId = generateUserId();
-            newUser.tenantId = tenantId;
-            newUser.username = username;
-            newUser.role = role;
-            newUser.passwordHash = hashed;
-
-            // ### CHANGED: row-level insert, no DB.save()
-            DB.createUser(newUser);
-
-            // 8) Return success
-            Map<String,Object> resp = new HashMap<>();
-            resp.put("userId", newUser.userId);
-            resp.put("tenantId", newUser.tenantId);
-            resp.put("username", newUser.username);
-            resp.put("role", newUser.role);
-            return createJsonResponse(201, toJson(resp));
-        });
-    }
-
-     //--------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
     // /api/refresh => reload DB from Azure
     //--------------------------------------------------------------------------
     private HttpResponse handleRefresh(HttpRequest request) {
@@ -650,22 +744,42 @@ public class ConnectionHandler implements Runnable {
         return createJsonResponse(200, toJson(tenants));
     }
 
+
     private HttpResponse createTenant(HttpRequest request) {
-        Map<String, Object> body = parseJsonMap(request.getTextBody());
-        String tenantName = (String) body.get("tenantName");
-        if (tenantName == null || tenantName.isEmpty()) {
-            return createError(400, "tenantName is required");
-        }
+    Map<String, Object> body = parseJsonMap(request.getTextBody());
+    String tenantName = (String) body.get("tenantName");
+    String tenantEmail = (String) body.get("tenantEmail");
 
-        DB.Tenant newTenant = new DB.Tenant();
-        newTenant.tenantId = generateTenantId();
-        newTenant.tenantName = tenantName;
-
-        // ### CHANGED: row-level CRUD
-        DB.createTenant(newTenant);
-
-        return createJsonResponse(201, toJson(newTenant));
+    if (tenantName == null || tenantName.isEmpty()) {
+        return createError(400, "tenantName is required");
     }
+
+    if (tenantEmail == null || tenantEmail.isEmpty()) {
+        return createError(400, "tenantEmail is required");
+    }
+
+    // Check if the email is already in use
+    DB.Tenant existingTenant = DB.findTenantByEmail(tenantEmail);
+    if (existingTenant != null) {
+        return createError(409, "Tenant email already exists");
+    }
+
+    DB.Tenant newTenant = new DB.Tenant();
+    newTenant.tenantId = generateTenantId();
+    newTenant.tenantName = tenantName;
+    newTenant.tenantEmail = tenantEmail;
+
+    DB.createTenant(newTenant);
+
+    // Include success message in response
+    Map<String, Object> response = new HashMap<>();
+    response.put("tenantId", newTenant.tenantId);
+    response.put("tenantName", newTenant.tenantName);
+    response.put("tenantEmail", newTenant.tenantEmail);
+    response.put("message", "Tenant organization created successfully");
+
+    return createJsonResponse(201, toJson(response));
+}
 
 
     //--------------------------------------------------------------------------
