@@ -841,6 +841,7 @@ public class DB {
         dbUser     = config.get("db.user");
         dbPassword = config.get("db.password");
 
+
         System.out.println("DB config loaded: " + dbUrl);
     }
 }

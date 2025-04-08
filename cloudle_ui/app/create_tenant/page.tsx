@@ -8,6 +8,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Cloud } from 'lucide-react';
 
+const SERVER_BASE_URL = process.env.NEXT_PUBLIC_SERVER_BASE_URL || "http://localhost:8080";
+
+
 export default function CreateTenantPage() {
   const router = useRouter();
   const [tenantName, setTenantName] = useState(''); // Changed to match backend
@@ -21,7 +24,8 @@ const handleSubmit = async (e: React.FormEvent) => {
   setError('');
 
   try {
-    const response = await fetch('http://localhost:8080/api/tenants', {
+
+    const response = await fetch(`${SERVER_BASE_URL}/api/tenants`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

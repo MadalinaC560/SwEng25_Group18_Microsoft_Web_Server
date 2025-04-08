@@ -7,6 +7,7 @@ import myGif from "@/public/web-browser.gif";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Cloud } from 'lucide-react';
+const SERVER_BASE_URL = process.env.NEXT_PUBLIC_SERVER_BASE_URL || "http://localhost:8080";
 
 export default function RegisterAccountPage() {
   const router = useRouter();
@@ -23,7 +24,7 @@ const handleSubmit = async (e: React.FormEvent) => {
 
   try {
     // First, look up the tenant ID from the email
-    const tenantLookupResponse = await fetch(`http://localhost:8080/api/tenants/lookup?email=${encodeURIComponent(tenantEmail)}`, {
+    const tenantLookupResponse = await fetch(`${SERVER_BASE_URL}/api/tenants/lookup?email=${encodeURIComponent(tenantEmail)}`, {
       method: 'GET',
     });
 
@@ -35,7 +36,7 @@ const handleSubmit = async (e: React.FormEvent) => {
     const tenantId = tenantData.tenantId;
 
     // Now register the user with the tenant ID
-    const registerResponse = await fetch('http://localhost:8080/api/users', {
+    const registerResponse = await fetch(`${SERVER_BASE_URL}/api/users`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

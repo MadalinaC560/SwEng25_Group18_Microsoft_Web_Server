@@ -213,7 +213,11 @@ public class ConnectionHandler implements Runnable {
         // Login
         processor.addRoute("/api/login", this::handleLogin);
 
-processor.addRoute("/api/users", (request) -> {
+        processor.addRoute("/api/tenants/usage", this::handleTenantsUsage);
+
+
+
+        processor.addRoute("/api/users", (request) -> {
     // 1) If it's CORS preflight
     if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
         return createCorsOk();
@@ -314,7 +318,45 @@ processor.addRoute("/api/users", (request) -> {
 });
     }
 
-     //--------------------------------------------------------------------------
+    // Then add this method to ConnectionHandler.java
+        private HttpResponse handleTenantsUsage(HttpRequest request) {
+            if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
+                return createCorsOk();
+            }
+
+            if (!"GET".equalsIgnoreCase(request.getMethod())) {
+                return createError(405, "Method Not Allowed");
+            }
+
+            List<Map<String, Object>> tenantsUsage = new ArrayList<>();
+
+            // Get all tenants
+            List<DB.Tenant> tenants = DB.listAllTenants();
+
+            // Calculate metrics for each tenant
+            for (DB.Tenant tenant : tenants) {
+                // Get apps for this tenant
+                List<DB.App> tenantApps = DB.listAppsForTenant(tenant.tenantId);
+
+                // Calculate CPU usage (for simplicity, assigning 2 cores per app)
+                int cpuCores = tenantApps.size() * 2;
+                // Calculate memory usage (for simplicity, assigning 4GB per app)
+                int memoryGB = tenantApps.size() * 4;
+
+                Map<String, Object> tenantUsage = new HashMap<>();
+                tenantUsage.put("tenantId", tenant.tenantId);
+                tenantUsage.put("tenantName", tenant.tenantName);
+                tenantUsage.put("apps", tenantApps.size());
+                tenantUsage.put("cpu", cpuCores);
+                tenantUsage.put("memory", memoryGB);
+
+                tenantsUsage.add(tenantUsage);
+            }
+
+            return createJsonResponse(200, toJson(tenantsUsage));
+        }
+
+    //--------------------------------------------------------------------------
     // /api/refresh => reload DB from Azure
     //--------------------------------------------------------------------------
     private HttpResponse handleRefresh(HttpRequest request) {
