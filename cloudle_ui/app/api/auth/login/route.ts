@@ -13,6 +13,11 @@ interface User {
   password: string;
 }
 
+interface Tenant {
+  orgEmail: string;
+}
+
+
 export async function POST(req: Request) {
   try {
     const { tenantEmail, userEmail, password } = await req.json();
@@ -26,7 +31,7 @@ export async function POST(req: Request) {
 
     // Check if tenant exists
     const tenantFile = path.join(process.cwd(), "supersecuretenants.json");
-    let tenants: any[] = [];
+    let tenants: Tenant[] = [];
 
     try {
       const tenantData = await fs.readFile(tenantFile, "utf-8");

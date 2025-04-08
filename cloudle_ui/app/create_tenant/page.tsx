@@ -33,8 +33,9 @@ export default function CreateTenantPage() {
       if (!response.ok) throw new Error(data.error);
 
       router.push('/login');
-    } catch (err: any) {
-      setError(err.message || 'Something went wrong.');
+    } catch (err: unknown) {
+      const error = err as Error;
+      setError(error.message || 'Something went wrong.');
     } finally {
       setLoading(false);
     }
