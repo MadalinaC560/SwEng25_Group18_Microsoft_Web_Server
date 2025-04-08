@@ -1,12 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import myGif from "@/public/web-browser.gif";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Cloud } from "lucide-react";
+
+// const SERVER_BASE_URL = process.env.NEXT_PUBLIC_SERVER_BASE_URL || "http://localhost:8080";
+const SERVER_BASE_URL = process.env.NEXT_PUBLIC_SERVER_BASE_URL || "http://108.143.71.239:8080";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -18,15 +21,34 @@ export default function LoginPage() {
 
   // UI states
   const [errorMessage, setErrorMessage] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
   const [loading, setLoading] = useState(false);
+
+  // Check for success messages from registration/tenant creation
+  useEffect(() => {
+    // Check for registration success message
+    const regSuccess = sessionStorage.getItem('registrationSuccess');
+    if (regSuccess) {
+      setSuccessMessage(regSuccess);
+      sessionStorage.removeItem('registrationSuccess');
+    }
+
+    // Check for tenant creation success message
+    const tenantSuccess = sessionStorage.getItem('tenantSuccess');
+    if (tenantSuccess) {
+      setSuccessMessage(tenantSuccess);
+      sessionStorage.removeItem('tenantSuccess');
+    }
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage("");
+    setSuccessMessage(""); // Clear any success messages when submitting
     setLoading(true);
 
     try {
-      const res = await fetch("http://localhost:8080/api/login", {
+      const res = await fetch(`${SERVER_BASE_URL}/api/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ tenantEmail, username: userName, password }),
@@ -128,6 +150,13 @@ export default function LoginPage() {
                   </p>
                 </div>
 
+                {/* Success message display */}
+                {successMessage && (
+                  <div className="bg-green-50 border border-green-300 text-green-700 p-3 text-sm rounded">
+                    {successMessage}
+                  </div>
+                )}
+
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div>
                     <label
@@ -222,27 +251,26 @@ export default function LoginPage() {
                 </form>
               </div>
             </div>
-
-            <div className="p-6 text-center text-sm text-gray-500">
-              By clicking continue, you agree to our{" "}
-              <a
-                href="#"
-                className="underline underline-offset-4 hover:text-blue-800"
-              >
-                Terms of Service
-              </a>{" "}
-              and{" "}
-              <a
-                href="#"
-                className="underline underline-offset-4 hover:text-blue-800"
-              >
-                Privacy Policy
-              </a>
-              .
+              <div className="p-6 text-center text-sm text-gray-500">
+                By clicking continue, you agree to our{" "}
+                <a
+                  href="#"
+                  className="underline underline-offset-4 hover:text-blue-800"
+                >
+                  Terms of Service
+                </a>{" "}
+                and{" "}
+                <a
+                  href="#"
+                  className="underline underline-offset-4 hover:text-blue-800"
+                >
+                  Privacy Policy
+                </a>
+                .
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
-  );
-}
+    );
+  }

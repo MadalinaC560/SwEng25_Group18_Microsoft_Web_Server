@@ -1,5 +1,5 @@
+// create_tenant/page.tsx
 'use client';
-
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
@@ -8,39 +8,55 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Cloud } from 'lucide-react';
 
+// const SERVER_BASE_URL = process.env.NEXT_PUBLIC_SERVER_BASE_URL || "http://localhost:8080";
+const SERVER_BASE_URL = process.env.NEXT_PUBLIC_SERVER_BASE_URL || "http://108.143.71.239:8080";
+
+
+
+
 export default function CreateTenantPage() {
   const router = useRouter();
-
-  const [orgName, setOrgName] = useState('');
-  const [orgEmail, setOrgEmail] = useState('');
+  const [tenantName, setTenantName] = useState(''); // Changed to match backend
+  const [tenantEmail, setTenantEmail] = useState(''); // This needs to be added to backend
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setError('');
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  setLoading(true);
+  setError('');
 
-    try {
-      const response = await fetch('/api/auth/tenant', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ orgName, orgEmail }),
-      });
-      
+  try {
 
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error);
+    const response = await fetch(`${SERVER_BASE_URL}/api/tenants`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        tenantName: tenantName,
+        tenantEmail: tenantEmail
+      }),
+    });
 
-      router.push('/login');
-    } catch (err: unknown) {
-      const error = err as Error;
-      setError(error.message || 'Something went wrong.');
-    } finally {
-      setLoading(false);
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || 'Failed to create tenant');
     }
-  };
 
+    // Store success message in sessionStorage for display on login page
+    sessionStorage.setItem('tenantSuccess', 'Tenant organization successfully created! You can now register users under this tenant.');
+
+    router.push('/login');
+  } catch (err) {
+  if (err instanceof Error) {
+    setError(err.message || 'Something went wrong.');
+  } else {
+    setError('Something went wrong.');
+  }
+} finally {
+    setLoading(false);
+  }
+};
   const handleHome = () => {
     router.push('/landing');
   };
@@ -94,25 +110,25 @@ export default function CreateTenantPage() {
 
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div>
-                    <label htmlFor="orgName" className="block text-sm font-medium text-gray-700 mb-1">Organisation Name</label>
+                    <label htmlFor="tenantName" className="block text-sm font-medium text-gray-700 mb-1">Organisation Name</label>
                     <Input
-                      id="orgName"
+                      id="tenantName"
                       type="text"
                       placeholder="Acme Corp"
-                      value={orgName}
-                      onChange={(e) => setOrgName(e.target.value)}
+                      value={tenantName}
+                      onChange={(e) => setTenantName(e.target.value)}
                       required
                     />
                   </div>
 
                   <div>
-                    <label htmlFor="orgEmail" className="block text-sm font-medium text-gray-700 mb-1">Organisation Email</label>
+                    <label htmlFor="tenantEmail" className="block text-sm font-medium text-gray-700 mb-1">Organisation Email</label>
                     <Input
-                      id="orgEmail"
+                      id="tenantEmail"
                       type="email"
                       placeholder="org@example.com"
-                      value={orgEmail}
-                      onChange={(e) => setOrgEmail(e.target.value)}
+                      value={tenantEmail}
+                      onChange={(e) => setTenantEmail(e.target.value)}
                       required
                     />
                   </div>
@@ -125,6 +141,7 @@ export default function CreateTenantPage() {
                 </form>
               </div>
             </div>
+
             <div className="p-6 text-center text-sm text-gray-500">
               Already have an account?{' '}
               <button

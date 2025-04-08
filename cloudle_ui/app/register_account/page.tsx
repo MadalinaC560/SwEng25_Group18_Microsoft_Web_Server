@@ -1,46 +1,77 @@
-'use client';
 
+'use client';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
-import myGif from "@/public/register.gif";
+import myGif from "@/public/web-browser.gif";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Cloud } from 'lucide-react';
+// const SERVER_BASE_URL = process.env.NEXT_PUBLIC_SERVER_BASE_URL || "http://localhost:8080";
+const SERVER_BASE_URL = process.env.NEXT_PUBLIC_SERVER_BASE_URL || "http://108.143.71.239:8080";
+
+
 
 export default function RegisterAccountPage() {
   const router = useRouter();
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState(''); // Changed from email to username
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [tenantEmail, setTenantEmail] = useState('');
-
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setError('');
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  setLoading(true);
+  setError('');
 
-    try {
-      const response = await fetch('/api/auth/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tenantEmail, email, password }),
+  try {
+    // First, look up the tenant ID from the email
+    const tenantLookupResponse = await fetch(`${SERVER_BASE_URL}/api/tenants/lookup?email=${encodeURIComponent(tenantEmail)}`, {
+      method: 'GET',
+    });
 
-      });
-
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error);
-      router.push('/login');
-    } catch (err: unknown) {
-      const error = err as Error;
-      setError(error.message || 'Something went wrong.');
-    } finally {
-      setLoading(false);
+    if (!tenantLookupResponse.ok) {
+      throw new Error('Tenant not found. Please check the tenant email address.');
     }
-  };
 
+    const tenantData = await tenantLookupResponse.json();
+    const tenantId = tenantData.tenantId;
+
+    // Now register the user with the tenant ID
+    const registerResponse = await fetch(`${SERVER_BASE_URL}/api/users`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        tenantId: tenantId,
+        username: username,
+        password: password,
+        role: 'user' // Default role for new users
+      }),
+    });
+
+    const userData = await registerResponse.json();
+
+    if (!registerResponse.ok) {
+      throw new Error(userData.error || 'Failed to register user');
+    }
+
+    // Store success message in sessionStorage for display on login page
+    sessionStorage.setItem('registrationSuccess', 'Account successfully created! You can now log in.');
+
+    // Success! Redirect to login
+    router.push('/login');
+
+  } catch (err) {
+  if (err instanceof Error) {
+    setError(err.message || 'Something went wrong.');
+  } else {
+    setError('Something went wrong.');
+  }
+} finally {
+    setLoading(false);
+  }
+};
   const handleHome = () => {
     router.push('/landing');
   };
@@ -49,6 +80,7 @@ export default function RegisterAccountPage() {
     <div className="min-h-screen w-full bg-blue-50 text-gray-800">
       {/* Header */}
       <header className="sticky top-0 z-50 bg-blue-600 text-white shadow-md">
+        {/* Header content remains the same */}
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2 text-xl font-semibold">
             <Cloud className="text-white" />
@@ -69,6 +101,7 @@ export default function RegisterAccountPage() {
         <div className="w-[1100px] h-[600px] flex rounded-xl overflow-hidden shadow-xl bg-white">
           {/* Left Side (Branding) */}
           <div className="w-[470px] bg-blue-600 p-10 flex flex-col justify-between text-white">
+            {/* Left side content remains the same */}
             <div className="flex items-center space-x-2">
               <Image src="/static/images/Cloudl.png" alt="Cloudle Logo" width={48} height={48} className="object-contain" />
               <h1 className="text-xl font-semibold">Cloudle</h1>
@@ -94,13 +127,13 @@ export default function RegisterAccountPage() {
 
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div>
-                    <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                    <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-1">Username</label>
                     <Input
-                      id="email"
-                      type="email"
-                      placeholder="you@example.com"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
+                      id="username"
+                      type="text" // Changed from email to text input type
+                      placeholder="your_username"
+                      value={username}
+                      onChange={(e) => setUsername(e.target.value)}
                       required
                     />
                   </div>
@@ -116,7 +149,6 @@ export default function RegisterAccountPage() {
                       required
                     />
                   </div>
-
 
                   <div>
                     <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">Password</label>
@@ -138,6 +170,7 @@ export default function RegisterAccountPage() {
                 </form>
               </div>
             </div>
+
             <div className="p-6 text-center text-sm text-gray-500">
               Already have an account?{' '}
               <button
