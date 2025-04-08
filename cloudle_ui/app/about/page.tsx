@@ -188,7 +188,7 @@ export default function AboutPage() {
     </header>
       <div className="container mx-auto px-6 space-y-20">
         <section className="text-center space-y-6">
-          <h1 className="text-5xl font-bold text-blue-800">About Cloudle</h1>
+          <h1 className="text-5xl font-bold text-blue-800 mt-8">About Cloudle</h1>
           <p className="text-xl text-gray-700 max-w-3xl mx-auto">
             We are on a mission to make cloud infrastructure management simple,
             efficient, and accessible to developers worldwide.
