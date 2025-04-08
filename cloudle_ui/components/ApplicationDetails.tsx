@@ -57,7 +57,8 @@ interface ApplicationData extends Partial<DBApp> {
   appUrl?: string;
 }
 
-const SERVER_BASE_URL = process.env.NEXT_PUBLIC_SERVER_BASE_URL || "http://localhost:8080";
+// const SERVER_BASE_URL = process.env.NEXT_PUBLIC_SERVER_BASE_URL || "http://localhost:8080";
+const SERVER_BASE_URL = process.env.NEXT_PUBLIC_SERVER_BASE_URL || "http://108.143.71.239:8080";
 
 interface ApplicationDetailsProps {
   appId: number;

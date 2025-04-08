@@ -52,7 +52,8 @@ public class ConfigLoader {
     }
 
     public String getBaseUrl() {
-        return properties.getProperty("baseUrl", "localhost:8080");
+//        return properties.getProperty("baseUrl", "localhost:8080");
+        return properties.getProperty("baseUrl", "http://108.143.71.239:8080");
     }
 
     public int getPort() {
