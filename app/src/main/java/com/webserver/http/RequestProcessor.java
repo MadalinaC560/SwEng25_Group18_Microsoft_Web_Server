@@ -9,11 +9,15 @@ import com.webserver.model.HttpResponse;
 import com.webserver.util.Logger;
 import com.webserver.util.FileService;
 import com.webserver.util.MimeTypes;
+import com.webserver.util.ScriptProcessorFactory;
+import com.webserver.util.ScriptProcessor;
 
 
 public class RequestProcessor {
     private final Map<String, RouteHandler> routes;
     private final FileService fileService;
+    private final ScriptProcessorFactory scriptProcessorFactory;
+
 
 
      public boolean removeRoute(String path) {
@@ -24,6 +28,8 @@ public class RequestProcessor {
     public RequestProcessor(FileService fileService) {
         this.routes = new HashMap<>();
         this.fileService = fileService;
+        this.scriptProcessorFactory = new ScriptProcessorFactory();
+
     }
 
     public void addRoute(String path, RouteHandler handler) {
@@ -91,15 +97,42 @@ public class RequestProcessor {
             // Attempt static file if GET
             if ("GET".equalsIgnoreCase(request.getMethod())) {
                 try {
-                    byte[] fileBytes = fileService.readFile(path);
-                    String mimeType = MimeTypes.getMimeType(path);
-                    return new HttpResponse.Builder()
-                            .setStatusCode(200)
-                            .setStatusMessage("OK")
-                            .addHeader("Content-Type", mimeType)
-                            .setRawBody(fileBytes)
-                            .build();
-                } catch (IOException e) {
+                    ScriptProcessor processor = scriptProcessorFactory.getProcessorForExtension(fileService.getFileExtension(path));
+                    if (processor != null)
+                    {
+                        String scriptPath = fileService.resolveScriptPath(path);
+                        try{
+                            String output = processor.processScript(scriptPath);
+                            return new HttpResponse.Builder()
+                                    .setStatusCode(200)
+                                    .setStatusMessage("OK")
+                                    .addHeader("Content-Type", processor.isHtml(output) ? "text/html": "text/plain" +"; charset=UTF-8")
+                                    .setBody(output)
+                                    .build();
+                        }
+                        catch(Exception e)
+                        {
+                            Logger.error("Exception occurred while processing script: " + path, e);
+                            return createErrorResponse(500, "Script Processing Error");
+                        }
+                    }
+                    else{
+                        // read the file from disk
+                        byte[] fileBytes = fileService.readFile(path);
+                        // determine mime type
+                        String mimeType = MimeTypes.getMimeType(path);
+
+                        // Return a 200 with the file content in rawBody
+                        return new HttpResponse.Builder()
+                                .setStatusCode(200)
+                                .setStatusMessage("OK")
+                                .addHeader("Content-Type", mimeType)
+                                .setRawBody(fileBytes)
+                                .build();
+                    }
+
+                }
+ catch (IOException e) {
                     Logger.error("Error serving static file: " + path, e);
                     return createErrorResponse(404, "Not Found");
                 }
