@@ -30,6 +30,10 @@ dependencies {
     implementation("com.google.code.gson:gson:2.10")
     implementation ("io.github.cdimascio:dotenv-java:3.0.0")
 
+       // Bouncy Castle for TLS certificate generation
+    implementation("org.bouncycastle:bcprov-jdk15on:1.70")
+    implementation("org.bouncycastle:bcpkix-jdk15on:1.70")
+
 }
 
 // Apply a specific Java toolchain to ease working on different environments.

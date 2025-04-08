@@ -1,6 +1,7 @@
 package com.webserver.core;
 
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.concurrent.ExecutorService;
@@ -20,7 +21,9 @@ public class Server {
         this.config = new ConfigLoader();
 
         // Initialize server socket with configured port
-        this.serverSocket = new ServerSocket(config.getPort());
+//        this.serverSocket = new ServerSocket(config.getPort());
+        this.serverSocket = new ServerSocket(config.getPort(), 50,
+    InetAddress.getByName(config.getBindAddress()));
         this.threadPool = Executors.newFixedThreadPool(config.getMaxThreads());
 
         Logger.info("Server initialized with:");

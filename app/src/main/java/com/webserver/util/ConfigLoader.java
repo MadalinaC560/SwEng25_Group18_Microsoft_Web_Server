@@ -8,7 +8,7 @@ public class ConfigLoader {
     // Singleton instance
     private static ConfigLoader instance;
 
-    private String CONFIG_FILE = System.getProperty("user.dir") + "/server.properties";
+    private final String CONFIG_FILE = System.getProperty("user.dir") + "/server.properties";
     private final Properties properties;
 
     // Private constructor to prevent direct instantiation
@@ -36,6 +36,7 @@ public class ConfigLoader {
         properties.setProperty("webroot", "./webroot");
         properties.setProperty("max_threads", "10");
         properties.setProperty("connection_timeout", "30000");
+        properties.setProperty("bind_address", "127.0.0.1");
 
         // Add defaults for PHP script processing
         properties.setProperty("php.api.url", "http://20.86.80.12:5000/run-php");
@@ -52,8 +53,8 @@ public class ConfigLoader {
     }
 
     public String getBaseUrl() {
-//        return properties.getProperty("baseUrl", "localhost:8080");
-        return properties.getProperty("baseUrl", "http://108.143.71.239:8080");
+//        return properties.getProperty("baseUrl", "http://108.143.71.239:8080");
+        return properties.getProperty("baseUrl", "https://108.143.71.239");
     }
 
     public int getPort() {
@@ -78,5 +79,9 @@ public class ConfigLoader {
 
     public String get(String key, String defaultValue) {
         return properties.getProperty(key, defaultValue);
+    }
+
+    public String getBindAddress() {
+        return properties.getProperty("bind_address");
     }
 }
