@@ -27,10 +27,10 @@ deploy:
     - npm install -g @azure/static-web-apps-cli
     - echo "Verifying .next folder:"
     - ls -la $APP_PATH/.next  # Verifies the .next folder exists
-    - swa deploy \
-        --app-location "$APP_PATH" \
-        --output-location "$APP_PATH/.next" \
-        --api-location "$API_LOCATION" \
-        --deployment-token "$AZURE_STATIC_WEB_APPS_API_TOKEN" \
+    - swa deploy 
+        --app-location "$APP_PATH" 
+        --output-location "$APP_PATH/.next" 
+        --api-location "$API_LOCATION" 
+        --deployment-token "$AZURE_STATIC_WEB_APPS_API_TOKEN" 
         --env production
 
