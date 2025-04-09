@@ -1,24 +1,26 @@
-
 stages:
   - build
   - deploy
 
 variables:
-  APP_LOCATION: 'cloudle_ui'               # folder with source
-  OUTPUT_LOCATION: 'cloudle_ui/build'      # folder with build output
-  API_LOCATION: 'api'                      # or "" if no API
+  APP_PATH: '$CI_PROJECT_DIR/cloudle_ui'               # Your frontend source folder
+  OUTPUT_LOCATION: '$CI_PROJECT_DIR/cloudle_ui/build'  # Where the build output will be
+  API_LOCATION: ''                                     # Leave blank if no Azure Functions
+  AZURE_STATIC_WEB_APPS_API_TOKEN: $AZURE_STATIC_WEB_APPS_API_TOKEN
 
+# Build the frontend
 build:
   stage: build
   image: node:18
   script:
-    - cd $APP_LOCATION
+    - cd $APP_PATH
     - npm ci
     - npm run build
   artifacts:
     paths:
       - $OUTPUT_LOCATION
 
+# Deploy to Azure
 deploy:
   stage: deploy
   image: node:18
@@ -27,7 +29,7 @@ deploy:
     - echo "Verifying build folder:"
     - ls -la $OUTPUT_LOCATION
     - swa deploy \
-        --app-location "$APP_LOCATION" \
+        --app-location "$APP_PATH" \
         --output-location "$OUTPUT_LOCATION" \
         --api-location "$API_LOCATION" \
         --deployment-token "$AZURE_STATIC_WEB_APPS_API_TOKEN" \
