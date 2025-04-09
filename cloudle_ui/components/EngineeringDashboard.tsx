@@ -106,7 +106,7 @@ export function EngineeringDashboard() {
   // }
 
   // While loading metrics, show a loading indicator.
-if (!platformMetrics) {
+if (!platformMetrics && ! error) {
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-100 to-blue-50 p-6 flex items-center justify-center">
       <div className="flex items-center space-x-4">
@@ -154,13 +154,13 @@ if (!platformMetrics) {
               </Card>
 
               <Card>
-                <CardHeader className="bg-white border border-blue-200 shadow-sm">
+                <CardHeader >
                   <CardTitle className="text-sm font-medium text-blue-800">System Load</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="flex items-center gap-2">
                     <Activity className="h-5 w-5 text-amber-500" />
-                    <div className="text-2xl font-bold text-blue-800">{(platformMetrics.systemLoad * 100).toFixed(0)}%</div>
+                    <div className="text-2xl font-bold text-blue-800">{Math.ceil((platformMetrics?.systemLoad ?? 0) * 100)}%</div>
                   </div>
                   <p className="text-xs text-blue-700/70">Current load based on CPU</p>
                 </CardContent>
@@ -173,7 +173,7 @@ if (!platformMetrics) {
                 <CardContent>
                   <div className="flex items-center gap-2">
                     <Clock className="h-5 w-5 text-indigo-500" />
-                    <div className="text-2xl font-bold text-blue-800">{platformMetrics?.avgResponseTime || 0} ms</div>
+                    <div className="text-2xl font-bold text-blue-800">{Math.ceil(platformMetrics?.avgResponseTime || 0)} ms</div>
                   </div>
                   <p className="text-xs text-blue-700/70">Across all requests</p>
                 </CardContent>
@@ -186,7 +186,7 @@ if (!platformMetrics) {
                 <CardContent>
                   <div className="flex items-center gap-2">
                     <AlertCircle className="h-5 w-5 text-red-500" />
-                    <div className="text-2xl font-bold text-blue-800">{platformMetrics?.errorRate || 0}%</div>
+                    <div className="text-2xl font-bold text-blue-800">{Math.ceil(platformMetrics?.errorRate || 0)}%</div>
                   </div>
                    <p className="text-xs text-blue-700/70">Errors per total requests</p>
                 </CardContent>
@@ -202,7 +202,7 @@ if (!platformMetrics) {
                 <CardContent>
                   <div className="flex items-center gap-2">
                     <Cpu className="h-5 w-5 text-blue-600" />
-                    <div className="text-2xl font-bold text-blue-800">{((platformMetrics?.cpuUtilization || 0) * 100).toFixed(1)}%</div>
+                    <div className="text-2xl font-bold text-blue-800">{Math.ceil((platformMetrics?.memoryUsage || 0) * 100)}%%</div>
                   </div>
                   <p className="text-xs text-blue-700/70">Across all servers</p>
                 </CardContent>
