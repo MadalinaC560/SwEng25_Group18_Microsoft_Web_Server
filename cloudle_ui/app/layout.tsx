@@ -16,7 +16,7 @@ export const metadata: Metadata = {
   title: "Cloudle Hosting",
   description: "Cloud Web Hosting",
   icons: {
-    icon: "/cloudl.png",  // Correct path for the icon
+    icon: "favicon.ico",  // Correct path for the icon
   },
 };
 

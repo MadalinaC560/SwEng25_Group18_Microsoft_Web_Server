@@ -74,7 +74,6 @@ export default function LandingPage() {
                 width={600}
                 height={600}
                 alt="Logo"
-                className="rounded-xl shadow-xl object-cover"
               />
             </div>
           </div>
