@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import myGif from "@/public/test1.gif";
 import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 import {
@@ -69,9 +70,9 @@ export default function LandingPage() {
             </div>
             <div className="flex justify-center">
               <Image
-                src="/cloudl.png"
-                width={520}
-                height={520}
+                src={myGif}
+                width={600}
+                height={600}
                 alt="Logo"
                 className="rounded-xl shadow-xl object-cover"
               />
