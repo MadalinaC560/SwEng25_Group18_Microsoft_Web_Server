@@ -6,6 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
+import { Bar } from 'recharts';
 import {
     Dialog,
     DialogContent,
@@ -48,7 +49,9 @@ import {
   getTenantAppMetrics,
 } from '@/components/api';
 import type { DBApp } from '@/components/api';
-import type { AppMetrics } from '@/components/api';  // the interface from the step above
+import type { AppMetrics } from '@/components/api';
+
+import { getAppLogs, LogEntry } from '@/components/api';
 
 import { useToast } from "@/hooks/use-toast";
 
@@ -78,6 +81,14 @@ export const ApplicationDetails: React.FC<ApplicationDetailsProps> = ({
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+
+const [logs, setLogs] = useState<LogEntry[]>([]);
+const [logsLoading, setLogsLoading] = useState(false);
+const [logsError, setLogsError] = useState<string | null>(null);
+const [logLevel, setLogLevel] = useState<string | null>(null);
+const [logsPage, setLogsPage] = useState(1);
+const [isAutoRefresh, setIsAutoRefresh] = useState(false);
+
   const [appData, setAppData] = useState<ApplicationData>({
     appId: 0,
     tenantId: 0,
@@ -97,6 +108,44 @@ export const ApplicationDetails: React.FC<ApplicationDetailsProps> = ({
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
   const { toast } = useToast();
+
+  const fetchLogs = useCallback(async () => {
+  if (tenantId === null || !appData.appId) return;
+
+  setLogsLoading(true);
+  setLogsError(null);
+
+  try {
+    const logEntries = await getAppLogs(appData.appId, 100, logLevel || undefined);
+    setLogs(logEntries);
+  } catch (error) {
+    console.error("Error fetching logs:", error);
+    setLogsError("Failed to load application logs");
+  } finally {
+    setLogsLoading(false);
+  }
+}, [tenantId, appData.appId, logLevel]);
+
+  // Use effect to load logs when tab changes or auto-refresh is enabled
+useEffect(() => {
+  if (activeTab === 'logs') {
+    fetchLogs();
+
+    let interval: NodeJS.Timeout | null = null;
+    if (isAutoRefresh) {
+      interval = setInterval(fetchLogs, 5000); // Refresh every 5 seconds
+    }
+
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }
+}, [activeTab, isAutoRefresh, fetchLogs]);
+
+// Handle log level change
+const handleLogLevelChange = (value: string) => {
+  setLogLevel(value === 'all' ? null : value);
+};
 
   // -------------------------------
   // 1) On mount, load tenantId from localStorage
@@ -414,42 +463,67 @@ export const ApplicationDetails: React.FC<ApplicationDetailsProps> = ({
               </Card>
             </div>
 
-            <Card>
-              <CardHeader>
-                <CardTitle>Performance Overview</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="h-80">
-                  {metricsError && (
-                    <div className="text-red-500">{metricsError}</div>
-                  )}
-                  {isAppMetricsLoading ? (
-                    <p>Loading chart...</p>
-                  ) : appMetrics && appMetrics.performanceData.length > 0 ? (
-                    <ResponsiveContainer width="100%" height="100%">
-                      <LineChart data={appMetrics.performanceData}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="time" />
-                        <YAxis />
-                        <Tooltip />
-                        <Legend />
-                        <Line
-                          type="monotone"
-                          dataKey="someKeyIfYouHaveIt"
-                          stroke="#8884d8"
-                          name="Response Time (ms)"
-                          dot={false}
-                        />
-                      </LineChart>
-                    </ResponsiveContainer>
-                  ) : (
-                    <p className="text-sm text-gray-500">
-                      No performance data available.
-                    </p>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
+
+<Card>
+  <CardHeader>
+    <CardTitle>Performance Overview</CardTitle>
+  </CardHeader>
+  <CardContent>
+    <div className="h-80">
+      {metricsError && (
+        <div className="text-red-500">{metricsError}</div>
+      )}
+      {isAppMetricsLoading ? (
+        <p>Loading chart...</p>
+      ) : appMetrics && appMetrics.performanceData.length > 0 ? (
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart data={appMetrics.performanceData}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="time" />
+            <YAxis yAxisId="left" orientation="left" />
+            <YAxis yAxisId="right" orientation="right" unit="ms" />
+            <Tooltip
+              formatter={(value, name) => {
+                // Format values appropriately based on the metric
+                if (name === "Response Time") return [`${value} ms`, name];
+                return [`${value}%`, name];
+              }}
+            />
+            <Legend />
+            <Line
+              type="monotone"
+              dataKey="serverLoad"
+              name="Server Load"
+              stroke="#f59e0b"
+              yAxisId="left"
+              dot={false}
+            />
+            <Line
+              type="monotone"
+              dataKey="errorRate"
+              name="Error Rate"
+              stroke="#ef4444"
+              yAxisId="left"
+              dot={false}
+            />
+            <Line
+              type="monotone"
+              dataKey="responseTime"
+              name="Response Time"
+              stroke="#8884d8"
+              yAxisId="right"
+              dot={false}
+            />
+          </LineChart>
+        </ResponsiveContainer>
+      ) : (
+        <p className="text-sm text-gray-500">
+          No performance data available.
+        </p>
+      )}
+    </div>
+  </CardContent>
+</Card>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <Card>
@@ -959,261 +1033,279 @@ export const ApplicationDetails: React.FC<ApplicationDetailsProps> = ({
 
           {/* LOGS TAB */}
           <TabsContent value="logs" className="space-y-6">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle>Application Logs</CardTitle>
-                <div className="flex items-center gap-2">
-                  <Select defaultValue="all">
-                    <SelectTrigger className="w-[150px]">
-                      <SelectValue placeholder="Log Level" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Levels</SelectItem>
-                      <SelectItem value="error">Errors</SelectItem>
-                      <SelectItem value="warn">Warnings</SelectItem>
-                      <SelectItem value="info">Info</SelectItem>
-                      <SelectItem value="debug">Debug</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <Input placeholder="Search logs..." className="w-[200px]" />
-                  <Button variant="outline" size="icon">
-                    <RefreshCw className="h-4 w-4" />
-                  </Button>
-                  <Button variant="outline" size="sm">
-                    <Download className="h-4 w-4 mr-2" />
-                    Export
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent className="p-0">
-                <div className="border-b flex items-center justify-between px-4 py-2 bg-muted/50">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium">Showing most recent logs</span>
-                    <Badge variant="outline">Live</Badge>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Switch id="auto-refresh" />
-                    <Label htmlFor="auto-refresh" className="text-sm">Auto-refresh</Label>
-                  </div>
-                </div>
+  <Card>
+    <CardHeader className="flex flex-row items-center justify-between">
+      <CardTitle>Application Logs</CardTitle>
+      <div className="flex items-center gap-2">
+        <Select
+          defaultValue="all"
+          onValueChange={handleLogLevelChange}
+        >
+          <SelectTrigger className="w-[150px]">
+            <SelectValue placeholder="Log Level" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Levels</SelectItem>
+            <SelectItem value="ERROR">Errors</SelectItem>
+            <SelectItem value="WARN">Warnings</SelectItem>
+            <SelectItem value="INFO">Info</SelectItem>
+          </SelectContent>
+        </Select>
+        <Input placeholder="Search logs..." className="w-[200px]" />
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={fetchLogs}
+          disabled={logsLoading}
+        >
+          {logsLoading ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <RefreshCw className="h-4 w-4" />
+          )}
+        </Button>
+        <Button variant="outline" size="sm">
+          <Download className="h-4 w-4 mr-2" />
+          Export
+        </Button>
+      </div>
+    </CardHeader>
+    <CardContent className="p-0">
+      <div className="border-b flex items-center justify-between px-4 py-2 bg-muted/50">
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-medium">Showing most recent logs</span>
+          <Badge variant="outline">Live</Badge>
+        </div>
+        <div className="flex items-center gap-2">
+          <Switch
+            id="auto-refresh"
+            checked={isAutoRefresh}
+            onCheckedChange={setIsAutoRefresh}
+          />
+          <Label htmlFor="auto-refresh" className="text-sm">Auto-refresh</Label>
+        </div>
+      </div>
 
-                <div className="max-h-[600px] overflow-auto font-mono text-sm">
-                  <table className="w-full">
-                    <tbody>
-                      <tr className="border-b hover:bg-muted/50">
-                        <td className="whitespace-nowrap py-2 px-4 text-muted-foreground">2024-02-18 14:32:45</td>
-                        <td className="whitespace-nowrap py-2 px-4">
-                          <Badge variant="outline" className="bg-red-50 text-red-700 hover:bg-red-50">ERROR</Badge>
-                        </td>
-                        <td className="py-2 px-4 text-red-600">
-                          Failed to connect to database: Connection timed out after 5000ms
-                        </td>
-                      </tr>
-                      <tr className="border-b hover:bg-muted/50">
-                        <td className="whitespace-nowrap py-2 px-4 text-muted-foreground">2024-02-18 14:32:42</td>
-                        <td className="whitespace-nowrap py-2 px-4">
-                          <Badge variant="outline" className="bg-yellow-50 text-yellow-700 hover:bg-yellow-50">WARN</Badge>
-                        </td>
-                        <td className="py-2 px-4 text-yellow-600">
-                          Slow query detected: SELECT * FROM products WHERE category_id = 5 (took 2134ms)
-                        </td>
-                      </tr>
-                      <tr className="border-b hover:bg-muted/50">
-                        <td className="whitespace-nowrap py-2 px-4 text-muted-foreground">2024-02-18 14:32:38</td>
-                        <td className="whitespace-nowrap py-2 px-4">
-                          <Badge variant="outline" className="bg-blue-50 text-blue-700 hover:bg-blue-50">INFO</Badge>
-                        </td>
-                        <td className="py-2 px-4">User authentication successful: user_id=1542, ip=192.168.1.105</td>
-                      </tr>
-                      <tr className="border-b hover:bg-muted/50">
-                        <td className="whitespace-nowrap py-2 px-4 text-muted-foreground">2024-02-18 14:32:35</td>
-                        <td className="whitespace-nowrap py-2 px-4">
-                          <Badge variant="outline" className="bg-blue-50 text-blue-700 hover:bg-blue-50">INFO</Badge>
-                        </td>
-                        <td className="py-2 px-4">Request completed: GET /api/products/featured status=200 time=84ms</td>
-                      </tr>
-                      <tr className="border-b hover:bg-muted/50">
-                        <td className="whitespace-nowrap py-2 px-4 text-muted-foreground">2024-02-18 14:32:30</td>
-                        <td className="whitespace-nowrap py-2 px-4">
-                          <Badge variant="outline" className="bg-green-50 text-green-700 hover:bg-green-50">DEBUG</Badge>
-                        </td>
-                        <td className="py-2 px-4">Cache hit for key: featured-products-list</td>
-                      </tr>
-                      <tr className="border-b hover:bg-muted/50">
-                        <td className="whitespace-nowrap py-2 px-4 text-muted-foreground">2024-02-18 14:32:28</td>
-                        <td className="whitespace-nowrap py-2 px-4">
-                          <Badge variant="outline" className="bg-blue-50 text-blue-700 hover:bg-blue-50">INFO</Badge>
-                        </td>
-                        <td className="py-2 px-4">New connection established: session_id=a8f5e120-5dfc-4ebd-b76a-9cb68ef2590a</td>
-                      </tr>
-                      <tr className="border-b hover:bg-muted/50">
-                        <td className="whitespace-nowrap py-2 px-4 text-muted-foreground">2024-02-18 14:32:25</td>
-                        <td className="whitespace-nowrap py-2 px-4">
-                          <Badge variant="outline" className="bg-yellow-50 text-yellow-700 hover:bg-yellow-50">WARN</Badge>
-                        </td>
-                        <td className="py-2 px-4 text-yellow-600">
-                          Memory usage approaching threshold: 412MB/512MB (80.4%)
-                        </td>
-                      </tr>
-                      <tr className="border-b hover:bg-muted/50">
-                        <td className="whitespace-nowrap py-2 px-4 text-muted-foreground">2024-02-18 14:32:20</td>
-                        <td className="whitespace-nowrap py-2 px-4">
-                          <Badge variant="outline" className="bg-blue-50 text-blue-700 hover:bg-blue-50">INFO</Badge>
-                        </td>
-                        <td className="py-2 px-4">
-                          Application startup complete. Environment: Production, Version: v1.5.2
-                        </td>
-                      </tr>
-                      <tr className="border-b hover:bg-muted/50">
-                        <td className="whitespace-nowrap py-2 px-4 text-muted-foreground">2024-02-18 14:32:18</td>
-                        <td className="whitespace-nowrap py-2 px-4">
-                          <Badge variant="outline" className="bg-blue-50 text-blue-700 hover:bg-blue-50">INFO</Badge>
-                        </td>
-                        <td className="py-2 px-4">Loading configuration from /etc/app/config.json</td>
-                      </tr>
-                      <tr className="border-b hover:bg-muted/50">
-                        <td className="whitespace-nowrap py-2 px-4 text-muted-foreground">2024-02-18 14:32:15</td>
-                        <td className="whitespace-nowrap py-2 px-4">
-                          <Badge variant="outline" className="bg-blue-50 text-blue-700 hover:bg-blue-50">INFO</Badge>
-                        </td>
-                        <td className="py-2 px-4">Application starting with process ID 4528</td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
+      <div className="max-h-[600px] overflow-auto font-mono text-sm">
+        {logsError && (
+          <div className="p-4 text-red-500">{logsError}</div>
+        )}
 
-                <div className="border-t flex items-center justify-between p-4">
-                  <div className="text-sm text-muted-foreground">
-                    Showing 10 of 1,248 logs
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Button variant="outline" size="icon" disabled>
-                      <ChevronLeft className="h-4 w-4" />
-                    </Button>
-                    <Button variant="outline" size="sm" className="h-8 min-w-8">1</Button>
-                    <Button variant="ghost" size="sm" className="h-8 min-w-8">2</Button>
-                    <Button variant="ghost" size="sm" className="h-8 min-w-8">3</Button>
-                    <span className="mx-1">...</span>
-                    <Button variant="ghost" size="sm" className="h-8 min-w-8">125</Button>
-                    <Button variant="outline" size="icon">
-                      <ChevronRight className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+        {logsLoading && logs.length === 0 ? (
+          <div className="p-4 text-center">
+            <Loader2 className="h-8 w-8 animate-spin mx-auto mb-2" />
+            <p>Loading logs...</p>
+          </div>
+        ) : logs.length === 0 ? (
+          <div className="p-4 text-center text-muted-foreground">
+            No logs found for this application
+          </div>
+        ) : (
+          <table className="w-full">
+            <tbody>
+              {logs.map((log, index) => {
+                // Determine badge color based on log level
+                let badgeClass = "bg-blue-50 text-blue-700 hover:bg-blue-50";
+                if (log.level === "ERROR") {
+                  badgeClass = "bg-red-50 text-red-700 hover:bg-red-50";
+                } else if (log.level === "WARN") {
+                  badgeClass = "bg-yellow-50 text-yellow-700 hover:bg-yellow-50";
+                }
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Log Summary</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-5">
-                    <div>
-                      <div className="mb-2 flex items-center justify-between">
-                        <h3 className="text-sm font-medium">Log Levels (Last 24h)</h3>
-                        <span className="text-xs text-muted-foreground">Total: 1,248</span>
-                      </div>
-                      <div className="space-y-2">
-                        <div className="grid grid-cols-[100px_1fr_50px] gap-2 items-center">
-                          <span className="text-xs">Error</span>
-                          <div className="h-2 rounded-full bg-muted overflow-hidden">
-                            <div className="h-full bg-red-500" style={{ width: '5%' }}></div>
-                          </div>
-                          <span className="text-xs text-right">64</span>
-                        </div>
-                        <div className="grid grid-cols-[100px_1fr_50px] gap-2 items-center">
-                          <span className="text-xs">Warning</span>
-                          <div className="h-2 rounded-full bg-muted overflow-hidden">
-                            <div className="h-full bg-yellow-500" style={{ width: '12%' }}></div>
-                          </div>
-                          <span className="text-xs text-right">152</span>
-                        </div>
-                        <div className="grid grid-cols-[100px_1fr_50px] gap-2 items-center">
-                          <span className="text-xs">Info</span>
-                          <div className="h-2 rounded-full bg-muted overflow-hidden">
-                            <div className="h-full bg-blue-500" style={{ width: '57%' }}></div>
-                          </div>
-                          <span className="text-xs text-right">712</span>
-                        </div>
-                        <div className="grid grid-cols-[100px_1fr_50px] gap-2 items-center">
-                          <span className="text-xs">Debug</span>
-                          <div className="h-2 rounded-full bg-muted overflow-hidden">
-                            <div className="h-full bg-green-500" style={{ width: '26%' }}></div>
-                          </div>
-                          <span className="text-xs text-right">320</span>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="pt-4 border-t">
-                      <h3 className="text-sm font-medium mb-3">Most Frequent Errors</h3>
-                      <div className="space-y-3">
-                        <div className="group">
-                          <div className="text-xs text-red-600 truncate">
-                            Failed to connect to database: Connection timed out
-                          </div>
-                          <div className="flex justify-between text-xs text-muted-foreground">
-                            <span>23 occurrences</span>
-                            <span>First: 2h ago</span>
-                          </div>
-                        </div>
-                        <div className="group">
-                          <div className="text-xs text-red-600 truncate">
-                            Uncaught TypeError: Cannot read property id of undefined
-                          </div>
-                          <div className="flex justify-between text-xs text-muted-foreground">
-                            <span>18 occurrences</span>
-                            <span>First: 5h ago</span>
-                          </div>
-                        </div>
-                        <div className="group">
-                          <div className="text-xs text-red-600 truncate">
-                            API rate limit exceeded for endpoint: /api/users
-                          </div>
-                          <div className="flex justify-between text-xs text-muted-foreground">
-                            <span>12 occurrences</span>
-                            <span>First: 1h ago</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+                // Determine text color based on log level
+                let textClass = "";
+                if (log.level === "ERROR") {
+                  textClass = "text-red-600";
+                } else if (log.level === "WARN") {
+                  textClass = "text-yellow-600";
+                }
 
-              <Card className="md:col-span-2">
-                <CardHeader>
-                  <CardTitle>Log Trends</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="h-72">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <LineChart
-                        data={Array(24).fill(0).map((_, i) => ({
-                          hour: `${i}:00`,
-                          error: Math.floor(Math.random() * 10),
-                          warning: Math.floor(Math.random() * 15 + 5),
-                          info: Math.floor(Math.random() * 40 + 20),
-                          debug: Math.floor(Math.random() * 20 + 10),
-                        }))}
-                      >
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="hour" />
-                        <YAxis />
-                        <Tooltip />
-                        <Legend />
-                        <Line type="monotone" dataKey="error" stroke="#ef4444" name="Errors" />
-                        <Line type="monotone" dataKey="warning" stroke="#f59e0b" name="Warnings" />
-                        <Line type="monotone" dataKey="info" stroke="#3b82f6" name="Info" />
-                        <Line type="monotone" dataKey="debug" stroke="#10b981" name="Debug" />
-                      </LineChart>
-                    </ResponsiveContainer>
-                  </div>
-                </CardContent>
-              </Card>
+                return (
+                  <tr key={index} className="border-b hover:bg-muted/50">
+                    <td className="whitespace-nowrap py-2 px-4 text-muted-foreground">
+                      {log.timestamp}
+                    </td>
+                    <td className="whitespace-nowrap py-2 px-4">
+                      <Badge variant="outline" className={badgeClass}>
+                        {log.level}
+                      </Badge>
+                    </td>
+                    <td className={`py-2 px-4 ${textClass}`}>
+                      {log.message}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        )}
+      </div>
+
+      <div className="border-t flex items-center justify-between p-4">
+        <div className="text-sm text-muted-foreground">
+          Showing {logs.length} logs
+        </div>
+        <div className="flex items-center gap-1">
+          <Button
+            variant="outline"
+            size="icon"
+            disabled={logsPage === 1}
+            onClick={() => setLogsPage(p => Math.max(1, p - 1))}
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <Button
+            variant={logsPage === 1 ? "default" : "ghost"}
+            size="sm"
+            className="h-8 min-w-8"
+          >
+            1
+          </Button>
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => setLogsPage(p => p + 1)}
+          >
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+    </CardContent>
+  </Card>
+
+  {/* Keep the log summary and trends cards, but potentially update them based on real data */}
+  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <Card>
+      <CardHeader>
+        <CardTitle>Log Summary</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-5">
+          <div>
+            <div className="mb-2 flex items-center justify-between">
+              <h3 className="text-sm font-medium">Log Levels</h3>
+              <span className="text-xs text-muted-foreground">Total: {logs.length}</span>
             </div>
-          </TabsContent>
+            {/* Calculate log level counts */}
+            {(() => {
+              const errorCount = logs.filter(l => l.level === "ERROR").length;
+              const warnCount = logs.filter(l => l.level === "WARN").length;
+              const infoCount = logs.filter(l => l.level === "INFO").length;
+              const debugCount = logs.length - errorCount - warnCount - infoCount;
+
+              const errorPct = logs.length ? (errorCount / logs.length) * 100 : 0;
+              const warnPct = logs.length ? (warnCount / logs.length) * 100 : 0;
+              const infoPct = logs.length ? (infoCount / logs.length) * 100 : 0;
+              const debugPct = logs.length ? (debugCount / logs.length) * 100 : 0;
+
+              return (
+                <div className="space-y-2">
+                  <div className="grid grid-cols-[100px_1fr_50px] gap-2 items-center">
+                    <span className="text-xs">Error</span>
+                    <div className="h-2 rounded-full bg-muted overflow-hidden">
+                      <div className="h-full bg-red-500" style={{ width: `${errorPct}%` }}></div>
+                    </div>
+                    <span className="text-xs text-right">{errorCount}</span>
+                  </div>
+                  <div className="grid grid-cols-[100px_1fr_50px] gap-2 items-center">
+                    <span className="text-xs">Warning</span>
+                    <div className="h-2 rounded-full bg-muted overflow-hidden">
+                      <div className="h-full bg-yellow-500" style={{ width: `${warnPct}%` }}></div>
+                    </div>
+                    <span className="text-xs text-right">{warnCount}</span>
+                  </div>
+                  <div className="grid grid-cols-[100px_1fr_50px] gap-2 items-center">
+                    <span className="text-xs">Info</span>
+                    <div className="h-2 rounded-full bg-muted overflow-hidden">
+                      <div className="h-full bg-blue-500" style={{ width: `${infoPct}%` }}></div>
+                    </div>
+                    <span className="text-xs text-right">{infoCount}</span>
+                  </div>
+                  <div className="grid grid-cols-[100px_1fr_50px] gap-2 items-center">
+                    <span className="text-xs">Other</span>
+                    <div className="h-2 rounded-full bg-muted overflow-hidden">
+                      <div className="h-full bg-green-500" style={{ width: `${debugPct}%` }}></div>
+                    </div>
+                    <span className="text-xs text-right">{debugCount}</span>
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
+
+          {/* Common error patterns section - could be improved with actual analysis */}
+          <div className="pt-4 border-t">
+            <h3 className="text-sm font-medium mb-3">Most Frequent Errors</h3>
+            <div className="space-y-3">
+              {logs
+                .filter(log => log.level === "ERROR")
+                .slice(0, 3)
+                .map((log, index) => (
+                  <div key={index} className="group">
+                    <div className="text-xs text-red-600 truncate">
+                      {log.message}
+                    </div>
+                    <div className="flex justify-between text-xs text-muted-foreground">
+                      <span>Error seen in logs</span>
+                      <span>Recent: {log.timestamp}</span>
+                    </div>
+                  </div>
+                ))}
+
+              {logs.filter(log => log.level === "ERROR").length === 0 && (
+                <div className="text-xs text-muted-foreground">
+                  No errors found in recent logs
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+
+    {/* The trends chart could be simplified or removed if we don't have enough historical data */}
+    <Card className="md:col-span-2">
+      <CardHeader>
+        <CardTitle>Log Activity</CardTitle>
+      </CardHeader>
+      <CardContent>
+        {logs.length === 0 ? (
+          <div className="h-72 flex items-center justify-center text-muted-foreground">
+            No log data available to visualize
+          </div>
+        ) : (
+          <div className="h-72">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart
+                data={[
+                  { hour: 'Recent Logs',
+                    error: logs.filter(l => l.level === "ERROR").length,
+                    warning: logs.filter(l => l.level === "WARN").length,
+                    info: logs.filter(l => l.level === "INFO").length,
+                    other: logs.length -
+                           logs.filter(l => l.level === "ERROR").length -
+                           logs.filter(l => l.level === "WARN").length -
+                           logs.filter(l => l.level === "INFO").length
+                  }
+                ]}
+              >
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="hour" />
+                <YAxis />
+                <Tooltip />
+                <Legend />
+                <Bar dataKey="error" name="Errors" fill="#ef4444" />
+                <Bar dataKey="warning" name="Warnings" fill="#f59e0b" />
+                <Bar dataKey="info" name="Info" fill="#3b82f6" />
+                <Bar dataKey="other" name="Other" fill="#10b981" />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  </div>
+</TabsContent>
         </Tabs>
       </div>
     </div>

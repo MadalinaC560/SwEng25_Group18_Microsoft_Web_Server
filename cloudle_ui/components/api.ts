@@ -193,3 +193,28 @@ export async function deleteTenantApp(tenantId: number, appId: number): Promise<
 export async function setAppStatus(tenantId: number, appId: number, newStatus: string): Promise<void> {
   await updateTenantApp(tenantId, appId, { status: newStatus });
 }
+
+
+// new log class impl
+export interface LogEntry {
+  timestamp: string;
+  level: string;
+  message: string;
+}
+
+export async function getAppLogs(
+  appId: number,
+  limit: number = 100,
+  level?: string
+): Promise<LogEntry[]> {
+  let url = `${SERVER_BASE_URL}/api/logs?appId=${appId}&limit=${limit}`;
+  if (level) {
+    url += `&level=${level}`;
+  }
+
+  const resp = await fetch(url);
+  if (!resp.ok) {
+    throw new Error(`Failed to fetch logs: ${resp.status}`);
+  }
+  return resp.json();
+}

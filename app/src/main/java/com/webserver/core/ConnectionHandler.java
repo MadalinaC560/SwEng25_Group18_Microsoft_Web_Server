@@ -215,6 +215,8 @@ public class ConnectionHandler implements Runnable {
 
         processor.addRoute("/api/tenants/usage", this::handleTenantsUsage);
 
+        processor.addRoute("/api/logs", this::handleLogsRoute);
+
 
 
         processor.addRoute("/api/users", (request) -> {
@@ -317,6 +319,64 @@ public class ConnectionHandler implements Runnable {
     return createJsonResponse(200, toJson(tenant));
 });
     }
+
+private HttpResponse handleLogsRoute(HttpRequest request) {
+    if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
+        return createCorsOk();
+    }
+
+    if (!"GET".equalsIgnoreCase(request.getMethod())) {
+        return createError(405, "Method Not Allowed");
+    }
+
+    // Parse query parameters
+    String path = request.getPath();
+    String appIdParam = extractQueryParam(path, "appId");
+    String limitParam = extractQueryParam(path, "limit");
+    String levelParam = extractQueryParam(path, "level");
+
+    int appId = 0;
+    int limit = 100; // Default to 100 entries
+
+    if (appIdParam != null) {
+        try {
+            appId = Integer.parseInt(appIdParam);
+        } catch (NumberFormatException e) {
+            return createError(400, "Invalid appId");
+        }
+    }
+
+    if (limitParam != null) {
+        try {
+            limit = Integer.parseInt(limitParam);
+        } catch (NumberFormatException e) {
+            return createError(400, "Invalid limit");
+        }
+    }
+
+    try {
+        List<Map<String, Object>> logs = LogReader.getRecentLogs(appId, limit, levelParam);
+        return createJsonResponse(200, toJson(logs));
+    } catch (Exception e) {
+        return createError(500, "Error reading logs: " + e.getMessage());
+    }
+}
+
+// Helper method to extract query params
+private String extractQueryParam(String path, String paramName) {
+    String paramPrefix = paramName + "=";
+    int index = path.indexOf(paramPrefix);
+    if (index == -1) return null;
+
+    int valueStart = index + paramPrefix.length();
+    int valueEnd = path.indexOf("&", valueStart);
+
+    if (valueEnd == -1) {
+        return path.substring(valueStart);
+    } else {
+        return path.substring(valueStart, valueEnd);
+    }
+}
 
     // Then add this method to ConnectionHandler.java
         private HttpResponse handleTenantsUsage(HttpRequest request) {
