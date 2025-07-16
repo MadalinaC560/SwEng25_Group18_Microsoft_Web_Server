@@ -1,0 +1,20 @@
+[
+  {
+    "email": "yua1@tcd.ie",
+    "password": "abcd"
+  },
+  {
+    "email": "test@gmail.com",
+    "password": "123"
+  },
+  {
+    "tenantEmail": "yua1@tcd.ie",
+    "email": "yua1@tcd.ie",
+    "password": "$2b$10$cATmECazUdbFSs/Gyrdmy.1dizC4MkgkVnvYO47oz7KgBEnkPLIyK"
+  },
+  {
+    "tenantEmail": "abc@org.com",
+    "email": "yua1@tcd.ie",
+    "password": "abcd"
+  }
+]

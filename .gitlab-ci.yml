@@ -1,0 +1,36 @@
+stages:
+  - build
+  - deploy
+
+variables:
+  APP_PATH: '$CI_PROJECT_DIR/cloudle_ui'               # Your frontend source folder (Next.js app)
+  API_LOCATION: ''                                     # Leave blank if no Azure Functions
+  AZURE_STATIC_WEB_APPS_API_TOKEN: $AZURE_STATIC_WEB_APPS_API_TOKEN
+
+# Build the frontend (Next.js)
+build:
+  stage: build
+  image: node:18
+  script:
+    - cd $APP_PATH
+    - npm ci
+    - npm run build
+  artifacts:
+    paths:
+      - $APP_PATH/.next   # Next.js output folder
+
+# Deploy to Azure
+deploy:
+  stage: deploy
+  image: registry.gitlab.com/static-web-apps/azure-static-web-apps-deploy
+  script:
+    - npm install -g @azure/static-web-apps-cli
+    - echo "Verifying .next folder:"
+    - ls -la $APP_PATH/.next  # Verifies the .next folder exists
+    - swa deploy 
+        --app-location "$APP_PATH" 
+        --output-location "$APP_PATH/.next" 
+        --api-location "$API_LOCATION" 
+        --deployment-token "$AZURE_STATIC_WEB_APPS_API_TOKEN" 
+        --env production
+

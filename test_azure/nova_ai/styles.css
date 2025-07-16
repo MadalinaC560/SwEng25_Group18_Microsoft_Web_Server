@@ -1,0 +1,140 @@
+/* Base Reset */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Inter', sans-serif;
+  background: #f0f4f8;
+  color: #1a1a1a;
+  line-height: 1.6;
+}
+
+/* Layout */
+.container {
+  max-width: 1100px;
+  margin: auto;
+  padding: 0 20px;
+}
+
+/* Header */
+header {
+  background: white;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.04);
+  padding: 20px 0;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+}
+
+.logo {
+  font-size: 28px;
+  font-weight: 800;
+  color: #2b6cb0;
+}
+
+nav a {
+  margin-left: 30px;
+  text-decoration: none;
+  color: #333;
+  font-weight: 600;
+  transition: color 0.3s ease;
+}
+
+nav a:hover {
+  color: #2b6cb0;
+}
+
+header .container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* Hero */
+.hero {
+  background: linear-gradient(to right, #2b6cb0, #3182ce);
+  color: white;
+  padding: 120px 0;
+  text-align: center;
+}
+
+.hero h1 {
+  font-size: 52px;
+  margin-bottom: 20px;
+}
+
+.hero p {
+  font-size: 20px;
+  margin-bottom: 30px;
+}
+
+.cta-button {
+  padding: 14px 36px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #2b6cb0;
+  background: white;
+  border: none;
+  border-radius: 30px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.cta-button:hover {
+  background: #e0eefe;
+  transform: scale(1.05);
+}
+
+.cta-message {
+  margin-top: 20px;
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(6px);
+  border-radius: 10px;
+  padding: 10px 20px;
+  color: white;
+  display: none;
+  font-size: 16px;
+}
+
+/* About */
+.about {
+  padding: 80px 20px;
+  background: white;
+  text-align: center;
+}
+
+.about h2 {
+  font-size: 36px;
+  margin-bottom: 20px;
+  color: #2b6cb0;
+}
+
+.about p {
+  font-size: 18px;
+  max-width: 700px;
+  margin: auto;
+}
+
+/* Footer */
+footer {
+  background: #f1f1f1;
+  padding: 30px 0;
+  text-align: center;
+  font-size: 14px;
+  color: #555;
+}
+
+/* Animations */
+.fade-in {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: all 0.8s ease-in-out;
+}
+
+.fade-in.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
